@@ -9,6 +9,8 @@ import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.sail.Sail;
 import org.openrdf.sail.inferencer.fc.ForwardChainingRDFSInferencer;
 import org.openrdf.sail.memory.MemoryStore;
+import org.openrdf.sail.nativerdf.NativeStore;
+
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -16,12 +18,11 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 
-
 import java.util.List;
-
 
 import org.openrdf.model.Literal;
 import org.openrdf.model.URI;
+import org.openrdf.model.Value;
 //import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.query.BindingSet;
@@ -36,6 +37,7 @@ public class Sesame {
 	public static void main(String args[]) throws RepositoryException, FileNotFoundException, MalformedQueryException, QueryEvaluationException{
 		File file = new File("/Users/student/Desktop/outputFile.txt");
 		PrintWriter pw = new PrintWriter(file);
+		
 //		Repository repo = new SailRepository(new NativeStore(file));
 //		repo.initialize();
 		
@@ -66,7 +68,7 @@ public class Sesame {
 		Query q = QueryFactory.create(query);
 		
 		//get the result from dbpedia
-		QueryExecution qexec = QueryExecutionFactory.sparqlService("http://dbpedia.org/sparql", q);
+		QueryExecution qexec = QueryExecutionFactory.sparqlService("http://live.dbpedia.org/sparql", q);
 		
 		try{
 			ResultSet results = qexec.execSelect();
@@ -82,14 +84,14 @@ public class Sesame {
 			
 			while(results.hasNext()){
 				QuerySolution qs = results.nextSolution();
-				System.out.print(counter+". ");
-				System.out.print("\t"+qs.get("?university"));
-				System.out.print("\t"+qs.get("?name"));
-				System.out.print("\t"+qs.get("?city"));
-				System.out.print("\t"+qs.get("?latitude"));
-				System.out.print("\t"+qs.get("?longitude"));
-				System.out.println();
-				pw.write(counter+". ");
+//				System.out.print(counter+". ");
+//				System.out.print("\t"+qs.get("?university"));
+//				System.out.print("\t"+qs.get("?name"));
+//				System.out.print("\t"+qs.get("?city"));
+//				System.out.print("\t"+qs.get("?latitude"));
+//				System.out.print("\t"+qs.get("?longitude"));
+//				System.out.println();
+//				pw.write(counter+". ");
 				pw.write("\t"+qs.get("?university"));
 				
 				String university = (qs.get("?university")==null?"":qs.get("?university").toString());
@@ -207,23 +209,49 @@ public class Sesame {
 	
 	static void queryRepository(Repository repository) throws RepositoryException, MalformedQueryException, QueryEvaluationException{
 		RepositoryConnection rConnection = repository.getConnection();
-		String qString = "SELECT ?x ?y WHERE {?x ?p ?y}";
-		String queryString = "SELECT ?y "
-				+ "WHERE "
-				+ "{ <http://dbpedia.org/resource/Point_Loma_Nazarene_University> <http://schema.org/legalName> ?y."
-				+ " } ";
+
+		String queryString = "SELECT DISTINCT ?university ?lat ?long "
+							+ "WHERE "
+							+ "{ ?university <http://www.w3.org/2000/01/rdf-schema#type> <http://schema.org/CollegeOrUniversity>. "
+							+ "  ?university  <http://schema.org/location> ?loc. "
+							+ "  ?loc  <http://schema.org/geo> ?geo. "
+							+ "  ?geo <http://schema.org/latitude> ?lat. "
+							+ "  ?geo <http://schema.org/longitude> ?long. }";
 		TupleQuery tQuery = rConnection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 		TupleQueryResult tqResult = tQuery.evaluate();
 		
 		while(tqResult.hasNext()){
 			BindingSet bindingSet = tqResult.next();
-//			Value vX = bindingSet.getValue("x");
-//			Value vY = bindingSet.getValue("y");
+			Value university = bindingSet.getValue("university");
+			Value latitude = bindingSet.getValue("lat");
+			Value longitude = bindingSet.getValue("long");
 			
-			List<String> names = tqResult.getBindingNames();
-			for (String string : names) {
-				System.out.println(string +": "+bindingSet.getValue(string));
+			//check if any or both are without values
+			if(latitude!=null && longitude!=null){
+				if(!latitude.stringValue().equals("") && !longitude.stringValue().equals("")){
+					double latitudeOfUniversity = Double.parseDouble(latitude.stringValue().split("\\^")[0]);
+					double longitudeOfUniversity = Double.parseDouble(longitude.stringValue().split("\\^")[0]);
+					double distance = calculateDistance(34.072224, -118.444099, latitudeOfUniversity, longitudeOfUniversity);
+				
+					if(distance<=200)
+						System.out.println("<"+university.stringValue()+"> = " +(double)(Math.round(distance*100))/100 );
+				}
 			}
 		}
+	}
+	
+	private static double calculateDistance(double latitudeOne, double longitudeOne, double latitudeTwo, double longitudeTwo) {
+		double earthRadius = 3958.75;
+		double dLat = Math.toRadians(latitudeTwo - latitudeOne);
+	    double dLng = Math.toRadians(longitudeTwo - longitudeOne);
+	    double sindLat = Math.sin(dLat/2);
+	    double sindLng = Math.sin(dLng/2);
+	    
+	    double intermediateValue = Math.pow(sindLat, 2) + Math.pow(sindLng, 2) 
+	    							* Math.cos(Math.toRadians(latitudeOne)) * Math.cos(Math.toRadians(latitudeTwo));
+	    double c = 2 * Math.atan2(Math.sqrt(intermediateValue), Math.sqrt(1 - intermediateValue));
+	    double distance = earthRadius * c;
+	    
+	    return distance;
 	}
 }
