@@ -6,8 +6,6 @@ import java.awt.Dimension;
 import java.awt.LayoutManager;
 import java.awt.Toolkit;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -66,21 +64,7 @@ public class DisplayMedia {
 
 		frame.pack();
 		frame.setVisible(true);
-		mediaComponent.displayMedia();
+		mediaComponent.displayMedia(frame);
 	}
 
-	public static void main(String[] args) {
-		String pathString = "./dataset/video04.rgb";
-		//String pathString = "./dataset/image001.rgb";
-		Path filePath = Paths.get(pathString);
-		System.out.println("Absolutepath = " + filePath.toAbsolutePath().toString());
-		Media media = new Media(filePath, MediaType.Video);
-		DisplayMedia image = new DisplayMedia(media);
-		try {
-			image.display();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 }

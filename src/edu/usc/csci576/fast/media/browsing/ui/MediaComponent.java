@@ -5,15 +5,23 @@ package edu.usc.csci576.fast.media.browsing.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 
 /**
@@ -25,45 +33,68 @@ public class MediaComponent extends JComponent implements MouseListener {
 	private static final long serialVersionUID = 1L;
 	JLabel statusComponent;
 	Media media;
-
+	HashMap<Rectangle, Path> collageMetadata;
+	
 	public MediaComponent(Media media, JLabel statusComponent) throws IOException {
 		this.statusComponent = statusComponent;
 		this.media = media;
+		if(MediaType.Collage == media.getFileType()) {
+			readFromMetadataFile();
+		}
 		setLayout(new BorderLayout());
 		int width = getWidth(media.getFileType());
 		int height = getHeight(media.getFileType());
 		Dimension mediaDimension = new Dimension(width, height);
 		setMaximumSize(mediaDimension);
 		setMinimumSize(mediaDimension);
+		addMouseListener((MouseListener) this);
 	}
 
-	public void displayMedia() throws IOException {
+	public void displayMedia(JFrame frame) throws IOException {
 		Path filePath = media.getFilePath();
 		MediaType fileType = media.getFileType();
 		byte[] fileContents = readFromFile(filePath);
 		BufferedImage image = null;
 		JLabel label = null;
 		int numOfFrames = getNumberOfFrames(filePath, fileType);
-		 int count = 0;
 		for(int i=0;i<numOfFrames;i++) {
 			image = createImage(fileContents, i, fileType);
 			if(label != null) {
 				remove(label);
 			}
-			if(count == 30) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					System.out.println("Thread interrupted on sleep");
-				}
-				count = 0;
-			}
 			label = new JLabel(new ImageIcon(image));
 			add(label);
-			count++;
-			System.out.println("processing frame " + count);
+			frame.pack();
+			try {
+				Thread.sleep(1000/30);
+			} catch (InterruptedException e) {
+				System.out.println("Thread interrupted on sleep");
+			}
 		}
-		addMouseListener((MouseListener) this);
+	}
+
+	private void readFromMetadataFile() throws IOException {
+		if (MediaType.Collage == media.getFileType()) {
+			String metadataFileName = media.getFilePath().toString()
+					+ ".metadata";
+			File file = new File(metadataFileName);
+			collageMetadata = new HashMap<Rectangle, Path>();
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			String line = null;
+			while ((line = bufferedReader.readLine()) != null) {
+				String[] tokens = line.split(" ");
+				Path fileName = Paths.get(tokens[0]);
+				int x = Integer.parseInt(tokens[1]);
+				int y = Integer.parseInt(tokens[2]);
+				int width = Integer.parseInt(tokens[3]);
+				int height = Integer.parseInt(tokens[4]);
+				Rectangle r = new Rectangle(x, y, width, height);
+				collageMetadata.put(r, fileName);
+			}
+			bufferedReader.close();
+			fileReader.close();
+		}
 	}
 
 	private int getNumberOfFrames(Path filePath, MediaType fileType) {
@@ -128,11 +159,14 @@ public class MediaComponent extends JComponent implements MouseListener {
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		int x, y;
-		x = e.getX();
-		y = e.getY();
-		String status = "x = " + x + " y = " + y;
-		statusComponent.setText(status);
+		if(MediaType.Collage == media.getFileType()) {
+			Point p = new Point(e.getX(), e.getY());
+			for(Rectangle r: collageMetadata.keySet()) {
+				if(r.contains(p)) {
+					statusComponent.setText(collageMetadata.get(r).toString());
+				}
+			}
+		}
 	}
 
 	@Override
