@@ -249,8 +249,10 @@ public class EntityExtractor {
 				
 				if(tempNode.getNodeType() == Node.ELEMENT_NODE){
 					Element element = (Element)tempNode;
+					//check if the element has person details in it
+					//if so, extract them
 					if((element.getAttribute("rdf:about")).contains("pershash")){
-						System.out.println("Description attribute: "+element.getAttribute("rdf:about"));
+						System.out.println("Name description attribute: "+element.getAttribute("rdf:about"));
 						Node firstChild = element.getFirstChild();
 						System.out.println("Resource id: "+ firstChild.getNodeName());
 						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
@@ -258,6 +260,18 @@ public class EntityExtractor {
 						Node nameNode = firstChild.getNextSibling();
 						System.out.println("Name: "+nameNode.getTextContent());
 						
+					}
+					
+					//check if the element has city details in it
+					//if so, extract them
+					if((element.getAttribute("rdf:about")).contains("city")){
+						
+						System.out.println("City description attribute: "+element.getAttribute("rdf:about"));
+						Node firstChild = element.getFirstChild();
+						System.out.println("Resource id: "+ firstChild.getNodeName());
+						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
+						System.out.println(firstChildAttribute);
+						System.out.println("City name: "+firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent());
 					}
 				}
 			}
