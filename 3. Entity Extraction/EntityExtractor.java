@@ -273,6 +273,16 @@ public class EntityExtractor {
 						System.out.println(firstChildAttribute);
 						System.out.println("City name: "+firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent());
 					}
+					
+					//if the element contains organization, extract it
+					if((((Element)(element.getFirstChild())).getAttribute("rdf:resource")).contains("Organization")){
+						System.out.println("Organization description attribute: "+element.getAttribute("rdf:about"));
+						Node firstChild = element.getFirstChild();
+						System.out.println("Resource id: "+ firstChild.getNodeName());
+						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
+						System.out.println(firstChildAttribute);
+						System.out.println("Organization name: "+firstChild.getNextSibling().getTextContent());
+					}
 				}
 			}
 		}
