@@ -1,15 +1,12 @@
 package edu.usc.csci576.fast.media.browsing.ui;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Random;
 
@@ -34,7 +31,7 @@ public class Collage {
 	
 	public Collage(List<Media> mediaList, int thumbNailWidth,
 			int thumbNailHeight) throws IOException {
-		createCollage(mediaList, thumbNailWidth, thumbNailWidth);
+		createCollage(mediaList, thumbNailWidth, thumbNailHeight);
 	}
 
 	private void createCollage(List<Media> mediaList, int thumbNailWidth,
@@ -43,26 +40,49 @@ public class Collage {
 		                        				* COLLAGED_IMAGE_HEIGHT * 3];
 		collagedImageFileName = createCollageFile();
 		collagedImageMetadataFileName = createCollageMetadataFile(collagedImageFileName);
-		OutputStream metadataFileStream = new FileOutputStream(collagedImageFileName.toFile());
-		String contents = String.valueOf(thumbNailWidth) + " " + String.valueOf(thumbNailHeight)+"\n";
-		metadataFileStream.write(contents.getBytes());
-		int count=1;
+		OutputStream metadataFileStream = new FileOutputStream(collagedImageMetadataFileName.toFile());
+		//String contents = String.valueOf(thumbNailWidth) + " " + String.valueOf(thumbNailHeight)+"\n";
+		//metadataFileStream.write(contents.getBytes());
+		int destPos = 0;
+		int count = 1;
 		for (Media media : mediaList) {
-			Path mediaPath = media.getFilePath();
-			/* If media is a video it chooses a frame and returns it as a image 
-			 * Else if it is a image it creates BufferedImage and return it*/
-			BufferedImage imageToProcess = preProcess(media);
-			Image thumbNailImage = imageToProcess.getScaledInstance(thumbNailWidth,
-					thumbNailHeight, Image.SCALE_DEFAULT);
-			/* Add the thumbNail image to the collage */
-			populateContentsOfCollage(collagedImageContents, mediaPath, toBufferedImage(thumbNailImage), count, thumbNailWidth, thumbNailHeight, metadataFileStream);
+			byte[] thumbNailBytes = createThumbNail(media, thumbNailWidth, thumbNailHeight);
+			System.arraycopy(thumbNailBytes, 0, collagedImageContents, destPos, thumbNailBytes.length);
+			destPos += thumbNailBytes.length;
+			int numOfThumNailPerRow = COLLAGED_IMAGE_WIDTH / thumbNailWidth;
+			int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
+			int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
+			String contents = String.format("%s %d %d %d %d\n", media.getFilePath().toString(), startX, startY, thumbNailWidth, thumbNailHeight);
+			metadataFileStream.write(contents.getBytes());
 			count++;
 		}
 		metadataFileStream.close();
 		writeToCollageFile(collagedImageContents);
 	}
 
-	private BufferedImage toBufferedImage(Image thumbNailImage) {
+	private byte[] createThumbNail(Media media, int thumbNailWidth, int thumbNailHeight) throws IOException {
+		int mediaWidth = MainUI.getWidth(media.getFileType());
+		int mediaHeight = MainUI.getHeight(media.getFileType());
+		byte[] mediaContents = preProcess(media);
+		byte[] thumbNailImage = new byte[thumbNailWidth * thumbNailHeight * 3];
+		//BufferedImage thumbNail = new BufferedImage(thumbNailWidth, thumbNailHeight, BufferedImage.TYPE_INT_RGB);
+		int thumbNailOffset = 0;
+		int mediaOffset = 0;
+		float verScalingFactor = (float) mediaHeight / thumbNailHeight;
+		float horScalingFactor = (float) mediaWidth / thumbNailWidth;
+		for (int y = 0; y < thumbNailHeight; y++) {
+			for (int x = 0; x < thumbNailWidth; x++) {
+				mediaOffset = (int) ((y * verScalingFactor) * mediaWidth + (x * horScalingFactor));
+				thumbNailImage[thumbNailOffset] = mediaContents[mediaOffset];
+				thumbNailImage[thumbNailOffset + (thumbNailWidth * thumbNailHeight)] = mediaContents[mediaOffset + (mediaWidth * mediaHeight)];
+				thumbNailImage[thumbNailOffset + (thumbNailWidth * thumbNailHeight*2)] = mediaContents[mediaOffset + (mediaWidth * mediaHeight * 2)];
+				thumbNailOffset++;
+			}
+		}
+		return thumbNailImage;
+	}
+
+	/*private BufferedImage toBufferedImage(Image thumbNailImage) {
 		if (thumbNailImage instanceof BufferedImage) {
 			return (BufferedImage) thumbNailImage;
 		}
@@ -72,7 +92,7 @@ public class Collage {
 		bGr.drawImage(thumbNailImage, 0, 0, null);
 		bGr.dispose();
 		return bimage;
-	}
+	}*/
 
 	private void writeToCollageFile(byte[] collagedImageContents) throws IOException {
 		OutputStream collagedImageStream = new FileOutputStream(collagedImageFileName.toFile());
@@ -80,7 +100,7 @@ public class Collage {
 		collagedImageStream.close();
 	}
 
-	private void populateContentsOfCollage(byte[] collagedImageContents, Path filePath, BufferedImage thumbNail, int count,
+	/*private void populateContentsOfCollage(byte[] collagedImageContents, Path filePath, byte[] thumbNailBytes, int count,
 			int thumbNailWidth, int thumbNailHeight, OutputStream metadataFileStream) throws IOException {
 		int startOffset = (thumbNailWidth * thumbNailHeight * 3) * (count - 1);
 		int offset = 0;
@@ -95,28 +115,29 @@ public class Collage {
 			}
 		}
 		int numOfThumNailPerRow = COLLAGED_IMAGE_WIDTH / thumbNailWidth;
-		int startY = ((count-1) / numOfThumNailPerRow) * COLLAGED_IMAGE_WIDTH;
+		int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
 		int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
 		String contents = String.format("%s %d %d %d %d\n", filePath.toString(), startX, startY, thumbNailWidth, thumbNailHeight);
 		metadataFileStream.write(contents.getBytes());
-	}
+		metadataFileStream.flush();
+	}*/
 
-	private BufferedImage preProcess(Media media) throws IOException {
+	private byte[] preProcess(Media media) throws IOException {
 		Path filePath = media.getFilePath();
+		int width = MainUI.getWidth(media.getFileType());
+		int height = MainUI.getHeight(media.getFileType());
+		int frameNumber = 0;
 		if (MediaType.Video == media.getFileType()) {
 			long fileSize = filePath.toFile().length();
-			int frameWidth = 352;
-			int frameHeight = 288;
-			int sizeOfSingleFrame = frameWidth * frameHeight * 3;
+			int sizeOfSingleFrame = width * height * 3;
 			int numOfFrames = (int) (fileSize / sizeOfSingleFrame);
 			Random rand = new Random();
-			int frameNumber = rand.nextInt(numOfFrames);
-			return getImageWithFrameNumber(filePath, frameNumber, frameWidth, frameHeight);
+			frameNumber = rand.nextInt(numOfFrames);
 		}
-		return null;
+		return getImageWithFrameNumber(filePath, frameNumber, width, height);
 	}
 
-	private BufferedImage getImageWithFrameNumber(Path filePath,
+	private byte[] getImageWithFrameNumber(Path filePath,
 			int frameNumber, int frameWidth, int frameHeight)
 			throws IOException {
 		int frameSize = frameWidth * frameHeight * 3;
@@ -125,21 +146,7 @@ public class Collage {
 		FileInputStream fis = new FileInputStream(filePath.toFile());
 		fis.read(fileContents, startOffset, frameSize);
 		fis.close();
-		int offset = 0;
-		BufferedImage image = new BufferedImage(frameWidth, frameHeight,
-				BufferedImage.TYPE_INT_RGB);
-		for (int y = 0; y < frameHeight; y++) {
-			for (int x = 0; x < frameWidth; x++) {
-				byte red = fileContents[offset];
-				byte green = fileContents[offset + frameHeight * frameWidth];
-				byte blue = fileContents[offset + frameHeight * frameWidth * 2];
-				int pixelValue = 0xff000000 | ((red & 0xff) << 16)
-						| ((green & 0xff) << 8) | (blue & 0xff);
-				image.setRGB(x, y, pixelValue);
-				offset++;
-			}
-		}
-		return image;
+		return fileContents;
 	}
 
 	private Path createCollageMetadataFile(Path collageFileName) throws IOException {
@@ -154,7 +161,9 @@ public class Collage {
 
 	private Path createCollageFile() throws IOException {
 		MainUI ui = MainUI.getInstance();
-		String collageFileName = ui.getCollageFolderName().toString() + "_" + Collage.uniqueId + ".rgb";
+		String collageFileName = ui.getCollageFolderName()
+				.resolve(Paths.get("collage_" + Collage.uniqueId + ".rgb"))
+				.toString();
 		Collage.uniqueId++;
 		File file = new File(collageFileName);
 		if(file.exists()) {
@@ -164,7 +173,7 @@ public class Collage {
 		return file.toPath();
 	}
 
-	public BufferedImage getImage(byte[] collagedImageContents) {
+	/*private BufferedImage getImage(byte[] collagedImageContents) {
 		BufferedImage image = new BufferedImage(COLLAGED_IMAGE_WIDTH, COLLAGED_IMAGE_HEIGHT,
 				BufferedImage.TYPE_INT_RGB);
 		int offset = 0;
@@ -180,6 +189,6 @@ public class Collage {
 			}
 		}
 		return image;
-	}
+	}*/
 
 }

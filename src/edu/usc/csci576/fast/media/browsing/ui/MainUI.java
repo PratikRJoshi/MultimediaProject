@@ -21,11 +21,11 @@ public class MainUI {
 	}
 
 	public Path getCollageFolderName() {
-		return collageFolderName;
+		return collageFolderName.toAbsolutePath();
 	}
 
 	public static MainUI getInstance() {
-		if(ui == null) {
+		if (ui == null) {
 			ui = new MainUI();
 		}
 		return ui;
@@ -33,10 +33,8 @@ public class MainUI {
 
 	public static void main(String[] args) {
 		try {
-			Path collageFolderPath = Paths.get("./dataset/collage");
-			if (!Files.exists(collageFolderPath.toAbsolutePath())) {
-				Files.createDirectory(collageFolderPath.toAbsolutePath());
-			}
+			MainUI ui = MainUI.getInstance();
+			ui.createCollageIfNotExists();
 			List<Media> mediaList = new ArrayList<Media>();
 			for (int i = 1; i <= 9; i++) {
 				String fileName = String.format("./dataset/image00%d.rgb", i);
@@ -58,6 +56,29 @@ public class MainUI {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+
+	public static int getWidth(MediaType mediaType) {
+		if (MediaType.Image == mediaType || MediaType.Video == mediaType) {
+			return 352;
+		} else {
+			return Collage.COLLAGED_IMAGE_WIDTH;
+		}
+	}
+
+	public static int getHeight(MediaType mediaType) {
+		if (MediaType.Image == mediaType || MediaType.Video == mediaType) {
+			return 288;
+		} else {
+			return Collage.COLLAGED_IMAGE_HEIGHT;
+		}
+	}
+	
+	private void createCollageIfNotExists() throws IOException {
+		collageFolderName = Paths.get("dataset/collage");
+		if (!Files.exists(collageFolderName.toAbsolutePath())) {
+			Files.createDirectory(collageFolderName.toAbsolutePath());
 		}
 	}
 }

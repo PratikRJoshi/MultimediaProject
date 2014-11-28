@@ -42,8 +42,8 @@ public class MediaComponent extends JComponent implements MouseListener {
 			readFromMetadataFile();
 		}
 		setLayout(new BorderLayout());
-		int width = getWidth(media.getFileType());
-		int height = getHeight(media.getFileType());
+		int width = MainUI.getWidth(media.getFileType());
+		int height = MainUI.getHeight(media.getFileType());
 		Dimension mediaDimension = new Dimension(width, height);
 		setMaximumSize(mediaDimension);
 		setMinimumSize(mediaDimension);
@@ -76,7 +76,7 @@ public class MediaComponent extends JComponent implements MouseListener {
 	private void readFromMetadataFile() throws IOException {
 		if (MediaType.Collage == media.getFileType()) {
 			String metadataFileName = media.getFilePath().toString()
-					+ ".metadata";
+					+ "_metadata";
 			File file = new File(metadataFileName);
 			collageMetadata = new HashMap<Rectangle, Path>();
 			FileReader fileReader = new FileReader(file);
@@ -98,8 +98,8 @@ public class MediaComponent extends JComponent implements MouseListener {
 	}
 
 	private int getNumberOfFrames(Path filePath, MediaType fileType) {
-		int height = getHeight(fileType);
-		int width = getWidth(fileType);
+		int height = MainUI.getHeight(fileType);
+		int width = MainUI.getWidth(fileType);
 		int fileSize = (int) filePath.toFile().length();
 		
 		int sizeOfFrame = height * width * 3;
@@ -120,8 +120,8 @@ public class MediaComponent extends JComponent implements MouseListener {
 			MediaType mediaType) throws IOException {
 
 		int offset = 0;
-		int height = getHeight(mediaType);
-		int width = getWidth(mediaType);
+		int height = MainUI.getHeight(mediaType);
+		int width = MainUI.getWidth(mediaType);
 		int startOffset = height * width * 3 * frameNumber;
 		BufferedImage image = new BufferedImage(width, height,
 				BufferedImage.TYPE_INT_RGB);
@@ -139,22 +139,6 @@ public class MediaComponent extends JComponent implements MouseListener {
 			}
 		}
 		return image;
-	}
-
-	private int getWidth(MediaType mediaType) {
-		if (MediaType.Image == mediaType || MediaType.Video == mediaType) {
-			return 352;
-		} else {
-			return Collage.COLLAGED_IMAGE_WIDTH;
-		}
-	}
-
-	private int getHeight(MediaType mediaType) {
-		if (MediaType.Image == mediaType || MediaType.Video == mediaType) {
-			return 288;
-		} else {
-			return Collage.COLLAGED_IMAGE_HEIGHT;
-		}
 	}
 
 	@Override
