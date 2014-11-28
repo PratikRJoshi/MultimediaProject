@@ -50,29 +50,40 @@ public class Collage {
 		OutputStream metadataFileStream = new FileOutputStream(collagedImageMetadataFileName.toFile());
 		//String contents = String.valueOf(thumbNailWidth) + " " + String.valueOf(thumbNailHeight)+"\n";
 		//metadataFileStream.write(contents.getBytes());
-		int destPos = 0;
 		int count = 1;
-		int length = thumbNailWidth * thumbNailHeight;
-		int offset = 0;
 		for (Media media : mediaList) {
 			byte[] thumbNailBytes = createThumbNail(media, thumbNailWidth, thumbNailHeight);
 			display(thumbNailBytes, thumbNailWidth, thumbNailHeight);
-			destPos = offset;
-			System.arraycopy(thumbNailBytes, 0, collagedImageContents, destPos, length);
-			destPos += COLLAGED_IMAGE_WIDTH * COLLAGED_IMAGE_HEIGHT;
-			System.arraycopy(thumbNailBytes, length, collagedImageContents, destPos, length);
-			destPos += COLLAGED_IMAGE_WIDTH * COLLAGED_IMAGE_HEIGHT;
-			System.arraycopy(thumbNailBytes, length * 2, collagedImageContents, destPos, length);
 			int numOfThumNailPerRow = COLLAGED_IMAGE_WIDTH / thumbNailWidth;
 			int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
 			int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
+			copyToCollage(collagedImageContents, startY, startX, thumbNailBytes, thumbNailWidth, thumbNailHeight);
 			String contents = String.format("%s %d %d %d %d\n", media.getFilePath().toString(), startX, startY, thumbNailWidth, thumbNailHeight);
 			metadataFileStream.write(contents.getBytes());
-			offset = count * length;
 			count++;
 		}
 		metadataFileStream.close();
 		writeToCollageFile(collagedImageContents);
+	}
+
+	private void copyToCollage(byte[] collagedImageContents,int startY, int startX,
+			byte[] thumbNailContents, int thumbNailWidth, int thumbNailHeight) {
+		int mappedX = startX * thumbNailWidth;
+		int orgLength = thumbNailHeight * thumbNailWidth;
+		int mappedLength = COLLAGED_IMAGE_HEIGHT * COLLAGED_IMAGE_WIDTH;
+		for(int y=0;y<thumbNailHeight;y++) {
+			int mappedY = (startY + y)*COLLAGED_IMAGE_WIDTH;
+			int orgIndex = y * thumbNailWidth;
+			int mappedIndex = mappedY+mappedX;
+			for(int x=0;x<thumbNailWidth;x++){
+				collagedImageContents[mappedIndex] = thumbNailContents[orgIndex];
+				collagedImageContents[mappedIndex+mappedLength] = thumbNailContents[orgIndex + orgLength];
+				collagedImageContents[mappedIndex+(mappedLength * 2)] = thumbNailContents[orgIndex + (orgLength*2)];
+				mappedIndex++;
+				orgIndex++;
+			}
+		}
+		return;
 	}
 
 	private void display(byte[] imageBytes, int width, int height) {
