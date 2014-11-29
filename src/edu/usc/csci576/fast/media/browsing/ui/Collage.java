@@ -68,13 +68,12 @@ public class Collage {
 
 	private void copyToCollage(byte[] collagedImageContents,int startY, int startX,
 			byte[] thumbNailContents, int thumbNailWidth, int thumbNailHeight) {
-		int mappedX = startX * thumbNailWidth;
 		int orgLength = thumbNailHeight * thumbNailWidth;
 		int mappedLength = COLLAGED_IMAGE_HEIGHT * COLLAGED_IMAGE_WIDTH;
 		for(int y=0;y<thumbNailHeight;y++) {
 			int mappedY = (startY + y)*COLLAGED_IMAGE_WIDTH;
 			int orgIndex = y * thumbNailWidth;
-			int mappedIndex = mappedY+mappedX;
+			int mappedIndex = mappedY+startX;
 			for(int x=0;x<thumbNailWidth;x++){
 				collagedImageContents[mappedIndex] = thumbNailContents[orgIndex];
 				collagedImageContents[mappedIndex+mappedLength] = thumbNailContents[orgIndex + orgLength];
