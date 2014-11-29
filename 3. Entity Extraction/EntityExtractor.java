@@ -249,42 +249,55 @@ public class EntityExtractor {
 				
 				if(tempNode.getNodeType() == Node.ELEMENT_NODE){
 					Element element = (Element)tempNode;
-					//check if the element has person details in it
-					//if so, extract them
-					if((element.getAttribute("rdf:about")).contains("pershash")){
-						System.out.println("Name description attribute: "+element.getAttribute("rdf:about"));
-						Node firstChild = element.getFirstChild();
-						System.out.println("Resource id: "+ firstChild.getNodeName());
-						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-						System.out.println(firstChildAttribute);
-						Node nameNode = firstChild.getNextSibling();
-						System.out.println("Name: "+nameNode.getTextContent());
-						
-					}
 					
-					//check if the element has city details in it
-					//if so, extract them
-					if((element.getAttribute("rdf:about")).contains("city")){
-						
-						System.out.println("City description attribute: "+element.getAttribute("rdf:about"));
-						Node firstChild = element.getFirstChild();
-						System.out.println("Resource id: "+ firstChild.getNodeName());
-						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-						System.out.println(firstChildAttribute);
-						System.out.println("City name: "+firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent());
-					}
+					getPersonDetails(element);
 					
-					//if the element contains organization, extract it
-					if((((Element)(element.getFirstChild())).getAttribute("rdf:resource")).contains("Organization")){
-						System.out.println("Organization description attribute: "+element.getAttribute("rdf:about"));
-						Node firstChild = element.getFirstChild();
-						System.out.println("Resource id: "+ firstChild.getNodeName());
-						String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-						System.out.println(firstChildAttribute);
-						System.out.println("Organization name: "+firstChild.getNextSibling().getTextContent());
-					}
+					getCityDetails(element);
+					
+					getOrganizationDetails(element);
 				}
 			}
+		}
+	}
+	
+	public static void getPersonDetails(Element element){
+		//check if the element has person details in it
+		//if so, extract them
+		if((element.getAttribute("rdf:about")).contains("pershash")){
+			System.out.println("Name description attribute: "+element.getAttribute("rdf:about"));
+			Node firstChild = element.getFirstChild();
+			System.out.println("Resource id: "+ firstChild.getNodeName());
+			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
+			System.out.println(firstChildAttribute);
+			Node nameNode = firstChild.getNextSibling();
+			System.out.println("Name: "+nameNode.getTextContent());
+			
+		}
+	}
+	
+	public static void getCityDetails(Element element){
+		//check if the element has city details in it
+		//if so, extract them
+		if((element.getAttribute("rdf:about")).contains("city")){
+			
+			System.out.println("City description attribute: "+element.getAttribute("rdf:about"));
+			Node firstChild = element.getFirstChild();
+			System.out.println("Resource id: "+ firstChild.getNodeName());
+			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
+			System.out.println(firstChildAttribute);
+			System.out.println("City name: "+firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent());
+		}
+	}
+	
+	public static void getOrganizationDetails(Element element){
+		//if the element contains organization, extract it
+		if((((Element)(element.getFirstChild())).getAttribute("rdf:resource")).contains("Organization")){
+			System.out.println("Organization description attribute: "+element.getAttribute("rdf:about"));
+			Node firstChild = element.getFirstChild();
+			System.out.println("Resource id: "+ firstChild.getNodeName());
+			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
+			System.out.println(firstChildAttribute);
+			System.out.println("Organization name: "+firstChild.getNextSibling().getTextContent());
 		}
 	}
 	
