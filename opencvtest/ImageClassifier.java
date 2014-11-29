@@ -129,15 +129,41 @@ public class ImageClassifier {
 		}
 	}
 	
+	public static void getDCTValues(String dir){
+		File imgDir=new File(dir);
+		HashMap<String , Integer> mapping = new HashMap<String , Integer>();
+		
+		for (File fileEntry : imgDir.listFiles()) {
+			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+			Mat yuvimg = new Mat();
+			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_BGR2YUV);
+			//System.out.println("here" +yuvimg.get(0, 0)[0]);
+			double dctBuffer[][] = PerformDCT.applyDCT(288, 352, yuvimg);
+			//printMat(dctBuffer);
+			double freqValue=PerformDCT.readZigZag(288, 352, dctBuffer);
+			System.out.println("Frequency value is "+freqValue);
+			
+			//System.exit(0);
+		}
+		
+	}
+	public static void printMat(double input[][]){
+		for(int i = 0; i < 50; i++){
+			for(int j = 0; j < 50; j++){
+				System.out.print(input[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
 	public static void main( String[] args ) throws IOException
 	   {
 		 System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-		 HashMap<String,Integer> peakMap=getImages(args[0]);
-		 
-		 int lowerLimit=200;
-		 int upperLimit=300;
-		 createBuckets(peakMap,lowerLimit,upperLimit);
-		    
+//		 HashMap<String,Integer> peakMap=getImages(args[0]);
+//		 
+//		 int lowerLimit=200;
+//		 int upperLimit=300;
+//		 createBuckets(peakMap,lowerLimit,upperLimit);
+		 getDCTValues(args[0]);  
 		 //	    	     
 //	     //convertRGBtoJPG();
 //		 
