@@ -19,7 +19,22 @@ import javax.swing.OverlayLayout;
 public class DisplayMedia {
 	private Media media;
 	private JFrame frame;
+	private JLabel statusComponent;
+	private JPanel contentComponent;
+	private MediaComponent mediaComponent;
 
+	public JFrame getFrame() {
+		return frame;
+	}
+	
+	public JLabel getStatusComponent() {
+		return statusComponent;
+	}
+	
+	public MediaComponent getMediaComponent() {
+		return mediaComponent;
+	}
+	
 	public DisplayMedia(Media media) {
 		this.media = media;
 		this.frame = new JFrame();
@@ -43,7 +58,7 @@ public class DisplayMedia {
 
 		int statusHeight = 20 * height / 100;
 		Dimension statusDimension = new Dimension(width, statusHeight);
-		JLabel statusComponent = new JLabel("Display the status here");
+		statusComponent = new JLabel("Display the status here");
 		statusComponent.setMaximumSize(statusDimension);
 		statusComponent.setMaximumSize(statusDimension);
 		statusComponent.setPreferredSize(statusDimension);
@@ -51,20 +66,20 @@ public class DisplayMedia {
 
 		int contentHeight = height - statusHeight;
 		Dimension contentDimension = new Dimension(width, contentHeight);
-		JPanel contentComponent = new JPanel();
+		contentComponent = new JPanel();
 		LayoutManager overlay = new OverlayLayout(contentComponent);
 		contentComponent.setLayout(overlay);
 		contentComponent.setMaximumSize(contentDimension);
 		contentComponent.setMaximumSize(contentDimension);
 		contentComponent.setPreferredSize(contentDimension);
-		MediaComponent mediaComponent = new MediaComponent(media, statusComponent);
+		mediaComponent = new MediaComponent(media, this);
 		contentComponent.add(mediaComponent);
 		contentComponent.setBackground(Color.GRAY);
 		pane.add(contentComponent);
 
 		frame.pack();
 		frame.setVisible(true);
-		mediaComponent.displayMedia(frame);
+		mediaComponent.displayMedia(media);
 	}
 
 }

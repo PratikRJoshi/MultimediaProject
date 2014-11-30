@@ -1,13 +1,16 @@
 package edu.usc.csci576.fast.media.browsing.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -58,7 +61,9 @@ public class Collage {
 			int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
 			int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
 			copyToCollage(collagedImageContents, startY, startX, thumbNailBytes, thumbNailWidth, thumbNailHeight);
-			String contents = String.format("%s %d %d %d %d\n", media.getFilePath().toString(), startX, startY, thumbNailWidth, thumbNailHeight);
+			String contents = String.format("%s %s %d %d %d %d\n", media
+					.getFilePath().toString(), media.getFileType().name(),
+					startX, startY, thumbNailWidth, thumbNailHeight);
 			metadataFileStream.write(contents.getBytes());
 			count++;
 		}
@@ -87,37 +92,29 @@ public class Collage {
 
 	private void display(byte[] imageBytes, int width, int height) {
 		BufferedImage image = getImage(imageBytes, width, height);
-		JFrame frame = new JFrame();
-		frame.setPreferredSize(new Dimension(352, 288));
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-		JLabel label = null;
-		label = new JLabel(new ImageIcon(image));
-		frame.getContentPane().add(label, BorderLayout.CENTER);
-		frame.pack();
-		frame.setVisible(true);
+		display(image, width, height);
 	}
 
 	private byte[] createThumbNail(Media media, int thumbNailWidth, int thumbNailHeight) throws IOException {
-		int mediaWidth = MainUI.getWidth(media.getFileType());
-		int mediaHeight = MainUI.getHeight(media.getFileType());
-		byte[] mediaContents = preProcess(media);
-		byte[] thumbNailImage = new byte[thumbNailWidth * thumbNailHeight * 3];
-		//BufferedImage thumbNail = new BufferedImage(thumbNailWidth, thumbNailHeight, BufferedImage.TYPE_INT_RGB);
-		int thumbNailLength = thumbNailWidth * thumbNailHeight;
-		int mediaLength = mediaWidth * mediaHeight;
-		int scalingFactor = mediaLength / thumbNailLength;
-		int mappedIndex = 0;
-		for (int i = 0; i < thumbNailLength; i++) {
-			mappedIndex = (int)(i* scalingFactor);
-			thumbNailImage[i] =  mediaContents[mappedIndex];
-			thumbNailImage[i+thumbNailLength] = mediaContents[mappedIndex + mediaLength];
-			thumbNailImage[i+(thumbNailLength*2)] = mediaContents[mappedIndex + (mediaLength * 2)];
+		BufferedImage image = preProcess(media);
+		BufferedImage thumbNailImage = toBufferedImage(image.getScaledInstance(thumbNailWidth, thumbNailHeight, Image.SCALE_SMOOTH));
+		
+		byte[] thumbNailBytes = new byte[thumbNailHeight * thumbNailWidth * 3];
+		int offset = 0;
+		for(int y=0;y<thumbNailHeight;y++) {
+			for(int x=0;x<thumbNailWidth;x++) {
+				int pixelValue= thumbNailImage.getRGB(x, y);
+				Color c = new Color(pixelValue);
+				thumbNailBytes[offset] = (byte) c.getRed();
+				thumbNailBytes[offset + (thumbNailHeight * thumbNailWidth)] = (byte) c.getGreen();
+				thumbNailBytes[offset + (thumbNailHeight * thumbNailWidth * 2)] = (byte) c.getBlue();
+				offset++;
+			}
 		}
-		return thumbNailImage;
+		return thumbNailBytes;
 	}
 
-	/*private BufferedImage toBufferedImage(Image thumbNailImage) {
+	private BufferedImage toBufferedImage(Image thumbNailImage) {
 		if (thumbNailImage instanceof BufferedImage) {
 			return (BufferedImage) thumbNailImage;
 		}
@@ -127,7 +124,7 @@ public class Collage {
 		bGr.drawImage(thumbNailImage, 0, 0, null);
 		bGr.dispose();
 		return bimage;
-	}*/
+	}
 
 	private void writeToCollageFile(byte[] collagedImageContents) throws IOException {
 		OutputStream collagedImageStream = new FileOutputStream(collagedImageFileName.toFile());
@@ -157,31 +154,44 @@ public class Collage {
 		metadataFileStream.flush();
 	}*/
 
-	private byte[] preProcess(Media media) throws IOException {
+	private BufferedImage preProcess(Media media) throws IOException {
 		Path filePath = media.getFilePath();
 		int width = MainUI.getWidth(media.getFileType());
 		int height = MainUI.getHeight(media.getFileType());
 		int frameNumber = 0;
+		long fileSize = filePath.toFile().length();
+		int sizeOfSingleFrame = width * height * 3;
+		int numOfFrames = (int) (fileSize / sizeOfSingleFrame);
 		if (MediaType.Video == media.getFileType()) {
-			long fileSize = filePath.toFile().length();
-			int sizeOfSingleFrame = width * height * 3;
-			int numOfFrames = (int) (fileSize / sizeOfSingleFrame);
 			Random rand = new Random();
 			frameNumber = rand.nextInt(numOfFrames);
 		}
-		display(filePath, width, height);
-		return getImageWithFrameNumber(filePath, frameNumber, width, height);
+		BufferedImage orgImage = getImageWithFrameNumber(filePath, frameNumber, width, height);
+		display(orgImage, width, height);
+		return orgImage;
 	}
 
-	private void display(Path filePath, int width, int height) throws IOException {
+	public static void display(BufferedImage image, int width, int height) {
+		JFrame frame = new JFrame();
+		frame.setPreferredSize(new Dimension(352, 288));
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		JLabel label = null;
+		label = new JLabel(new ImageIcon(image));
+		frame.getContentPane().add(label, BorderLayout.CENTER);
+		frame.pack();
+		frame.setVisible(true);
+	}
+
+	/*private void display(Path filePath, int width, int height) throws IOException {
 		byte[] filecontents = new byte[width * height * 3];
 		FileInputStream fis = new FileInputStream(filePath.toFile());
 		fis.read(filecontents);
 		fis.close();
 		display(filecontents, width, height);
-	}
+	}*/
 	
-	private BufferedImage getImage(byte[] collagedImageContents, int width, int height) {
+	public static BufferedImage getImage(byte[] collagedImageContents, int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		int offset = 0;
 		for (int y = 0; y < height; y++) {
@@ -198,16 +208,19 @@ public class Collage {
 		return image;
 	}
 
-	private byte[] getImageWithFrameNumber(Path filePath,
+	public static BufferedImage getImageWithFrameNumber(Path filePath,
 			int frameNumber, int frameWidth, int frameHeight)
 			throws IOException {
-		int frameSize = frameWidth * frameHeight * 3;
-		byte[] fileContents = new byte[frameSize];
-		int startOffset = frameNumber * frameSize;
-		FileInputStream fis = new FileInputStream(filePath.toFile());
-		fis.read(fileContents, startOffset, frameSize);
-		fis.close();
-		return fileContents;
+		int frameSize = frameWidth * frameHeight;
+		byte[] fileContents = new byte[frameSize * 3];
+		int startOffset = frameNumber * frameSize * 3;
+		RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
+		raf.seek(startOffset);
+		raf.read(fileContents);
+		raf.close();
+		
+		BufferedImage image = getImage(fileContents, frameWidth, frameHeight);
+		return image;
 	}
 
 	private Path createCollageMetadataFile(Path collageFileName) throws IOException {
