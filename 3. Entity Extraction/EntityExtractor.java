@@ -178,7 +178,7 @@ public class EntityExtractor {
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					method.getResponseBodyAsStream(), "UTF-8"));
-			File out = new File("output.xml");
+			File out = new File(output, "file.xml");
 			writer = new PrintWriter(new BufferedWriter(new FileWriter(out)));
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -225,7 +225,7 @@ public class EntityExtractor {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			
 			//parse using builder to get DOM representation of the XML file
-			 dom = db.parse("C:\\Pratik\\548\\output.xml");
+			 dom = db.parse("C:\\Pratik\\548\\Calais\\file.xml");
 			 dom.getDocumentElement().normalize();
 			 System.out.println("Root element = "+dom.getDocumentElement().getNodeName());
 			 
@@ -246,6 +246,8 @@ public class EntityExtractor {
 				Node tempNode = nodeList.item(i);
 				//get the name
 //				System.out.println(nodeList.item(i).getNodeName());
+//				System.out.println("Details of article "+(i+1));
+//				System.out.println("==================================================");
 				
 				if(tempNode.getNodeType() == Node.ELEMENT_NODE){
 					Element element = (Element)tempNode;
@@ -303,13 +305,13 @@ public class EntityExtractor {
 	
 	public static void main(String[] args) {
 		verifyArgs(args);
-		EntityExtractor httpClientPost = new EntityExtractor();
-		httpClientPost.input = new File(args[0]);
-		httpClientPost.output = new File(args[1]);
-		httpClientPost.client = new HttpClient();
-		httpClientPost.client.getParams().setParameter("http.useragent", "Calais Rest Client");
+		EntityExtractor firstHttpClientPost = new EntityExtractor();
+		firstHttpClientPost.input = new File(args[0]);
+		firstHttpClientPost.output = new File(args[1]);
+		firstHttpClientPost.client = new HttpClient();
+		firstHttpClientPost.client.getParams().setParameter("http.useragent", "Calais Rest Client");
 
-		httpClientPost.run();
+		firstHttpClientPost.run();
 		
 		extractContentFromRDFXML();
 	}
