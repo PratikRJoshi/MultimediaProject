@@ -51,8 +51,11 @@ public class EntityExtractor {
 
 	private File input;
 	private File output;
+	private static String outputFile;
 	private HttpClient client;
 	private static Repository repository;
+	static TripleObject tObj = new TripleObject();
+	static List<TripleObject> repoList = new ArrayList<TripleObject>();
 	
 	// Get in memory repo
 	private static Repository getOnMemoryRepository() throws RepositoryException {
@@ -70,7 +73,7 @@ public class EntityExtractor {
 	}
 	
 	// Store to triple store
-	/*public static void storeEntityList(ArrayList<Entity> entityList) {
+	public static void storeEntityList(List<TripleObject> entityList) {
 		try {
 
 			// Get the repository object
@@ -91,26 +94,26 @@ public class EntityExtractor {
 			Literal literal;
 
 			// Iterate over all the university records and insert into the triple store
-			for (Entity entityObj : entityList) {
+			for (int i = 0; i < entityList.size(); i++) {
 
 				// <univ> rdfs:type schema:CollegeOrUniversity.
-				subject = factory.createURI(entityObj.);
-				predicate = factory.createURI(rdfsType);
-				object = factory.createURI(entityObj.type);
+				subject = factory.createURI(entityList.get(i).entitySubject);
+				predicate = factory.createURI(entityList.get(i).entityType);
+				object = factory.createURI(entityList.get(i).entityName);
 
 				rdfRepositoryConnection.add(subject, predicate, object);
 
 				// <univ> schema:legalName "name".
-				subject = factory.createURI(entityObj.resUrl);
-				predicate = factory.createURI(schemaURI);
-				literal = factory.createLiteral(entityObj.name);
-
-				rdfRepositoryConnection.add(subject, predicate, literal);
+//				subject = factory.createURI(entityObj.resUrl);
+//				predicate = factory.createURI(schemaURI);
+//				literal = factory.createLiteral(entityObj.name);
+//
+//				rdfRepositoryConnection.add(subject, predicate, literal);
 			}
 		} catch (Exception e) {
 			System.out.println("Exception caused in storing triplets");
 		}
-	}*/
+	}
 
 	private PostMethod createPostMethod() {
 		PostMethod method = new PostMethod(CALAIS_URL);
@@ -178,7 +181,8 @@ public class EntityExtractor {
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					method.getResponseBodyAsStream(), "UTF-8"));
-			File out = new File(output, "file.xml");
+			File out = new File(output, file.getName() + ".xml");
+			outputFile = out.getAbsolutePath();
 			writer = new PrintWriter(new BufferedWriter(new FileWriter(out)));
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -225,7 +229,8 @@ public class EntityExtractor {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			
 			//parse using builder to get DOM representation of the XML file
-			 dom = db.parse("C:\\Pratik\\548\\Calais\\file.xml");
+//			 dom = db.parse("C:\\Pratik\\548\\Calais\\output.xml");
+			 dom = db.parse(outputFile);
 			 dom.getDocumentElement().normalize();
 			 System.out.println("Root element = "+dom.getDocumentElement().getNodeName());
 			 
@@ -242,7 +247,7 @@ public class EntityExtractor {
 		NodeList nodeList = root.getElementsByTagName("rdf:Description");
 		if (nodeList!=null && nodeList.getLength() > 0) {
 			for(int i=0; i<nodeList.getLength(); i++){
-
+				System.out.println("Iteration "+(i+1));
 				Node tempNode = nodeList.item(i);
 				//get the name
 //				System.out.println(nodeList.item(i).getNodeName());
@@ -257,6 +262,8 @@ public class EntityExtractor {
 					getCityDetails(element);
 					
 					getOrganizationDetails(element);
+					
+					System.out.println();
 				}
 			}
 		}
@@ -266,14 +273,20 @@ public class EntityExtractor {
 		//check if the element has person details in it
 		//if so, extract them
 		if((element.getAttribute("rdf:about")).contains("pershash")){
-			System.out.println("Name description attribute: "+element.getAttribute("rdf:about"));
+			String personSubject = element.getAttribute("rdf:about");
+			System.out.println("Name description attribute: "+personSubject);
+//			if(personName!=null)
+//				entityObj = new Entity();
 			Node firstChild = element.getFirstChild();
 			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
 			System.out.println(firstChildAttribute);
 			Node nameNode = firstChild.getNextSibling();
-			System.out.println("Name: "+nameNode.getTextContent());
+			String name = nameNode.getTextContent();
+			System.out.println("Name: "+name);
 			
+			tObj = new TripleObject(personSubject, firstChildAttribute, name);
+			repoList.add(tObj);
 		}
 	}
 	
@@ -281,25 +294,34 @@ public class EntityExtractor {
 		//check if the element has city details in it
 		//if so, extract them
 		if((element.getAttribute("rdf:about")).contains("city")){
-			
-			System.out.println("City description attribute: "+element.getAttribute("rdf:about"));
+			String citySubject = element.getAttribute("rdf:about");
+			System.out.println("City description attribute: "+citySubject);
 			Node firstChild = element.getFirstChild();
 			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
 			System.out.println(firstChildAttribute);
-			System.out.println("City name: "+firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent());
+			String cityName = firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent();
+			System.out.println("City name: "+cityName);
+			
+			tObj = new TripleObject(citySubject, firstChildAttribute, cityName);
+			repoList.add(tObj);
 		}
 	}
 	
 	public static void getOrganizationDetails(Element element){
 		//if the element contains organization, extract it
 		if((((Element)(element.getFirstChild())).getAttribute("rdf:resource")).contains("Organization")){
-			System.out.println("Organization description attribute: "+element.getAttribute("rdf:about"));
+			String orgSubject = element.getAttribute("rdf:about");
+			System.out.println("Organization description attribute: "+orgSubject);
 			Node firstChild = element.getFirstChild();
 			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
 			System.out.println(firstChildAttribute);
-			System.out.println("Organization name: "+firstChild.getNextSibling().getTextContent());
+			String orgName = firstChild.getNextSibling().getTextContent();
+			System.out.println("Organization name: "+orgName);
+			
+			tObj = new TripleObject(orgSubject, firstChildAttribute, orgName);
+			repoList.add(tObj);
 		}
 	}
 	
@@ -314,5 +336,7 @@ public class EntityExtractor {
 		firstHttpClientPost.run();
 		
 		extractContentFromRDFXML();
+		
+		storeEntityList(repoList);
 	}
 }
