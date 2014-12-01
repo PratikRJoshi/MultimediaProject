@@ -37,6 +37,8 @@ import org.opencv.utils.Converters;
 import static java.nio.file.StandardCopyOption.*;
 //import opencv2/nonfree/nonfree.hpp"
 public class ImageClassifier {
+	static double C[] = new double[8];
+	static double COS[][] = new double[8][8];
 	
 	public static void convertRGBtoJPG(){
 		
@@ -60,10 +62,11 @@ public class ImageClassifier {
 		byte data[]= new byte[(int) (hueMat.total()*hueMat.channels())];
 		byte countMat[]=new byte[360];
 		//System.out.println("rows "+hueMat.rows()+"columns "+hueMat.cols()+" totals "+hueMat.total());
-		hueMat.get(0, 0, data);
+		//hueMat.get(0, 0, data);
 		
-		for(int i=0;i<hueMat.total();i++){
-			countMat[(data[i]+180)]++;
+		for(int i=0;i<288;i++){
+			for(int j=0;j<352;j++)
+			countMat[(int)hueMat.get(i, j)[0]]++;
 		}
 		
 		int peakValue = countMat[0];
@@ -74,7 +77,7 @@ public class ImageClassifier {
 				peakIndex=i;
 			}
 		}
-		//System.out.println("The peak index for this image is "+peakIndex+" value is "+peakValue);
+		System.out.println("The peak index for this image is "+peakIndex+" value is "+peakValue);
 		return peakIndex;
 	}
 
@@ -96,6 +99,24 @@ public class ImageClassifier {
 		return mapping;
 		
 	}
+	public static void createBuckets(HashMap<String, Double> peakMap,double lowerLimit,double upperLimit){
+		Iterator it = peakMap.entrySet().iterator();
+		while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        if((double)pairs.getValue()>lowerLimit && (double)pairs.getValue()<=upperLimit){
+	        	System.out.println("Image path "+ pairs.getKey()+" "+"peakvalue "+pairs.getValue());
+	        	File src= new File((String)pairs.getKey());
+	        	File dest=new File("C:\\outputCartoon\\"+src.getName());
+	        	
+	        	try {
+					copyFileUsingFileChannels(src, dest);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	        }
+		}
+	}
+	
 	public static void createBuckets(HashMap<String, Integer> peakMap,int lowerLimit,int upperLimit){
 		Iterator it = peakMap.entrySet().iterator();
 		while (it.hasNext()) {
@@ -108,11 +129,31 @@ public class ImageClassifier {
 	        	try {
 					copyFileUsingFileChannels(src, dest);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	        }
 		}
+	}
+	
+	public static void separateCartoonImages(HashMap<String, Double> filterMap){
+		Iterator it = filterMap.entrySet().iterator();
+		int i =1;
+		while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        if((double)pairs.getValue()<-0.01){
+	        	System.out.println("Image path "+ pairs.getKey()+" "+"peakvalue "+pairs.getValue());
+	        	File src= new File((String)pairs.getKey());
+	        	File dest=new File("C:\\outputCartoon\\"+src.getName());
+	        	
+	        	try {
+					copyFileUsingFileChannels(src, dest);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	        }
+	        System.out.println("Cartoon image found: "+(i++));
+		}
+		
 	}
 	
 	private static void copyFileUsingFileChannels(File source, File dest)
@@ -129,22 +170,71 @@ public class ImageClassifier {
 		}
 	}
 	
-	public static void getDCTValues(String dir){
-		File imgDir=new File(dir);
-		HashMap<String , Integer> mapping = new HashMap<String , Integer>();
+	public static void setCOSValues(){
+//		double cos[][] = cosArray;
+		//System.out.println(Math.acos(-1));
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				COS[i][j]  = Math.cos(((2 * j + 1) * i * Math.acos(-1))/16.0);			//i and j should interchange their positions
+			
+			if(i == 0 || j==0)
+				C[i] = 1/Math.sqrt(2);
+			else
+				C[i] = 1;
+			}
+		}
 		
+	}
+	
+	public static HashMap<String,Double> classifyByFilter(String dir){
+		File imgDir=new File(dir);
+		HashMap<String , Double> mapping = new HashMap<String , Double>();
+		
+		for (File fileEntry : imgDir.listFiles()) {
+			Mat src=Highgui.imread(fileEntry.getAbsolutePath());
+			Mat dst=new Mat();
+			Mat dstHSV=new Mat();
+			Mat srcHSV=new Mat();
+			Imgproc.bilateralFilter(src, dst, 5, 250, 250);
+
+			double meanValue=0;
+
+			//Imgproc.cvtColor(src, srcHSV, Imgproc.COLOR_RGB2YUV);
+			//Imgproc.cvtColor(dst, dstHSV, Imgproc.COLOR_RGB2YUV);
+
+			for(int i=0;i<288;i++)
+				for(int j=0;j<352;j++)
+					meanValue+=src.get(i,j)[0]-dst.get(i,j)[0];
+
+			meanValue/=352*288;
+			mapping.put(fileEntry.getAbsolutePath(), meanValue);
+		}
+		return mapping;
+			//System.out.println("Mean is "+meanValue);
+
+			//Highgui.imwrite("c:\\testcartoon.jpg", dst);
+		}
+	public static HashMap<String, Double> getDCTValues(String dir){
+		File imgDir=new File(dir);
+		HashMap<String , Double> mapping = new HashMap<String , Double>();
+		setCOSValues();
 		for (File fileEntry : imgDir.listFiles()) {
 			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
 			Mat yuvimg = new Mat();
-			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_BGR2YUV);
+			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_RGB2YUV);
 			//System.out.println("here" +yuvimg.get(0, 0)[0]);
-			double dctBuffer[][] = PerformDCT.applyDCT(288, 352, yuvimg);
+			double dctBuffer[][] = PerformDCT.applyDCT(288, 352, yuvimg,COS,C);
 			//printMat(dctBuffer);
 			double freqValue=PerformDCT.readZigZag(288, 352, dctBuffer);
-			System.out.println("Frequency value is "+freqValue);
-			
+			System.out.println("Frequency value for image :"+fileEntry.getName()+" is "+freqValue);
+			mapping.put(fileEntry.getAbsolutePath(), freqValue);
 			//System.exit(0);
+			
 		}
+		
+		System.out.println("Size of map "+mapping.size());
+		return mapping;
+		
 		
 	}
 	public static void printMat(double input[][]){
@@ -155,16 +245,42 @@ public class ImageClassifier {
 			System.out.println();
 		}
 	}
+	
+	public static void separateFaceImages(List<String> faceImages){
+		
+		for(int i=0 ; i <faceImages.size();i++){
+			File src= new File(faceImages.get(i));
+        	File dest=new File("C:\\outputFace\\"+src.getName());
+        	
+        	try {
+				copyFileUsingFileChannels(src, dest);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	System.out.println("Iteration "+(i+1)+" finished");
+		}
+	}
+	
+	
 	public static void main( String[] args ) throws IOException
 	   {
 		 System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
 //		 HashMap<String,Integer> peakMap=getImages(args[0]);
 //		 
-//		 int lowerLimit=200;
-//		 int upperLimit=300;
+//		 int lowerLimit=0;
+//		 int upperLimit=50;
 //		 createBuckets(peakMap,lowerLimit,upperLimit);
-		 getDCTValues(args[0]);  
-		 //	    	     
+		 
+		 HashMap<String,Double> filterMap = classifyByFilter(args[1]);
+		 separateCartoonImages(filterMap);
+ 
+		 FaceDetector detect=new FaceDetector();
+		 List<String> faceImages=detect.faceDetect(args[0]);
+		 separateFaceImages(faceImages);
+		 		 
+		 //HashMap<String,Double> dctMap = getDCTValues(args[0]);  
+		 //createBuckets(dctMap,1566.0,1650.0);
+		 	    	     
 //	     //convertRGBtoJPG();
 //		 
 //		 Mat img_1 = Highgui.imread(args[0]);
