@@ -1,38 +1,22 @@
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.FileRequestEntity;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.xerces.impl.XMLEntityManager.Entity;
-
-import java.io.*;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.jsoup.Jsoup;
-import org.openrdf.repository.Repository;
-import org.openrdf.repository.RepositoryConnection;
-import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.sail.SailRepository;
-import org.openrdf.sail.Sail;
-import org.openrdf.sail.inferencer.fc.ForwardChainingRDFSInferencer;
-import org.openrdf.sail.memory.MemoryStore;
-import org.openrdf.sail.nativerdf.NativeStore;
-
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.FileRequestEntity;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.openrdf.model.Literal;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
@@ -44,6 +28,17 @@ import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
 import org.openrdf.query.TupleQueryResult;
+import org.openrdf.repository.Repository;
+import org.openrdf.repository.RepositoryConnection;
+import org.openrdf.repository.RepositoryException;
+import org.openrdf.repository.sail.SailRepository;
+import org.openrdf.sail.Sail;
+import org.openrdf.sail.inferencer.fc.ForwardChainingRDFSInferencer;
+import org.openrdf.sail.memory.MemoryStore;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class EntityExtractor {
 
@@ -87,7 +82,8 @@ public class EntityExtractor {
 
 			// Set the rdfs:type to http://www.w3.org/2000/01/rdf-schema#type
 			String rdfsType = "http://www.w3.org/2000/01/rdf-schema#type";
-
+			String dummyURI = "http://www.dummy.org/";
+			
 			ValueFactory factory = repository.getValueFactory();
 			
 			URI subject, predicate, object;
@@ -96,25 +92,78 @@ public class EntityExtractor {
 			// Iterate over all the university records and insert into the triple store
 			for (int i = 0; i < entityList.size(); i++) {
 
+//				System.out.println("Iteration "+(i+1));
+//				System.out.println("Subject: "+entityList.get(i).entitySubject);
+//				System.out.println("Predicate: "+entityList.get(i).entityType);
+//				System.out.println("Object: "+entityList.get(i).entityName);
+//				
 				// <univ> rdfs:type schema:CollegeOrUniversity.
 				subject = factory.createURI(entityList.get(i).entitySubject);
 				predicate = factory.createURI(entityList.get(i).entityType);
-				object = factory.createURI(entityList.get(i).entityName);
-
+				object = factory.createURI(dummyURI+entityList.get(i).entityName);
+				
 				rdfRepositoryConnection.add(subject, predicate, object);
-
-				// <univ> schema:legalName "name".
-//				subject = factory.createURI(entityObj.resUrl);
-//				predicate = factory.createURI(schemaURI);
-//				literal = factory.createLiteral(entityObj.name);
-//
-//				rdfRepositoryConnection.add(subject, predicate, literal);
 			}
+			
+			queryStore(rdfRepositoryConnection);
+			
 		} catch (Exception e) {
-			System.out.println("Exception caused in storing triplets");
+//			System.out.println("Exception caused in storing triplets");
+			e.printStackTrace();
 		}
 	}
 
+	private static void queryStore(RepositoryConnection rdfRepositoryConnection) throws RepositoryException, MalformedQueryException{
+		//generate the query 
+		String queryString = "PREFIX dbpprop: <http://dbpedia.org/property/>\n"+
+						"PREFIX dbpedia: <http://dbpedia.org/resource/>\n"+
+						"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"+
+						"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"+
+						"PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n"+
+						"SELECT *"+ 
+						"WHERE {\n"+
+							"?person <http://s.opencalais.com/1/type/em/e/Person> ?personName.\n"+
+							"?city <http://s.opencalais.com/1/type/er/Geo/City> ?cityName.\n"+
+							"?org <http://s.opencalais.com/1/type/em/e/Organization> ?orgName.\n"+
+						"}";
+		TupleQuery tQuery = rdfRepositoryConnection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+		TupleQueryResult tqResult = null;
+		try {
+			tqResult = tQuery.evaluate();
+		} catch (QueryEvaluationException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			while(tqResult.hasNext()){
+				BindingSet bindingSet = tqResult.next();
+				
+				Value personSubject = bindingSet.getValue("person");
+				Value personValue = bindingSet.getValue("personName");
+				System.out.println("Person Subject: "+personSubject.stringValue());
+				System.out.println("Person Value: "+personValue);
+				
+				System.out.println();
+				
+				Value citySubject = bindingSet.getValue("city");
+				Value cityValue = bindingSet.getValue("cityName");
+				System.out.println("City Subject: "+citySubject);
+				System.out.println("City Name: "+cityValue);
+				
+				System.out.println();
+				
+				Value orgSubject = bindingSet.getValue("org");
+				Value orgValue = bindingSet.getValue("orgName");
+				System.out.println("Organization Subject: "+orgSubject);
+				System.out.println("Organization Name: "+orgValue);
+				
+				System.out.println();
+			}
+		} catch (QueryEvaluationException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	private PostMethod createPostMethod() {
 		PostMethod method = new PostMethod(CALAIS_URL);
 
@@ -123,7 +172,7 @@ public class EntityExtractor {
 
 		// Set input content type
 		//method.setRequestHeader("Content-Type", "text/xml; charset=UTF-8");
-		//method.setRequestHeader("Content-Type", "text/html; charset=UTF-8");
+//		method.setRequestHeader("Content-Type", "text/html; charset=UTF-8");
 		method.setRequestHeader("Content-Type", "text/raw; charset=UTF-8");
 
 		// Set response/output format
@@ -136,7 +185,7 @@ public class EntityExtractor {
 		return method;
 	}
 
-	private void run() {
+	private void run() { 
 		try {
 			if (input.isFile()) {
 				postFile(input, createPostMethod());
@@ -179,9 +228,8 @@ public class EntityExtractor {
 	private void saveResponse(File file, PostMethod method) throws IOException {
 		PrintWriter writer = null;
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					method.getResponseBodyAsStream(), "UTF-8"));
-			File out = new File(output, file.getName() + ".xml");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream(), "UTF-8"));
+			File out = new File(file.getName() + ".xml");
 			outputFile = out.getAbsolutePath();
 			writer = new PrintWriter(new BufferedWriter(new FileWriter(out)));
 			String line;
@@ -231,6 +279,8 @@ public class EntityExtractor {
 			//parse using builder to get DOM representation of the XML file
 //			 dom = db.parse("C:\\Pratik\\548\\Calais\\output.xml");
 			 dom = db.parse(outputFile);
+			
+//			 dom = db.parse("C:\\Pratik\\548\\Calais\\o\\article2.txt.xml");
 			 dom.getDocumentElement().normalize();
 			 System.out.println("Root element = "+dom.getDocumentElement().getNodeName());
 			 
@@ -247,7 +297,7 @@ public class EntityExtractor {
 		NodeList nodeList = root.getElementsByTagName("rdf:Description");
 		if (nodeList!=null && nodeList.getLength() > 0) {
 			for(int i=0; i<nodeList.getLength(); i++){
-				System.out.println("Iteration "+(i+1));
+//				System.out.println("Iteration "+(i+1));
 				Node tempNode = nodeList.item(i);
 				//get the name
 //				System.out.println(nodeList.item(i).getNodeName());
@@ -263,7 +313,7 @@ public class EntityExtractor {
 					
 					getOrganizationDetails(element);
 					
-					System.out.println();
+//					System.out.println();
 				}
 			}
 		}
@@ -274,16 +324,16 @@ public class EntityExtractor {
 		//if so, extract them
 		if((element.getAttribute("rdf:about")).contains("pershash")){
 			String personSubject = element.getAttribute("rdf:about");
-			System.out.println("Name description attribute: "+personSubject);
+//			System.out.println("Name description attribute: "+personSubject);
 //			if(personName!=null)
 //				entityObj = new Entity();
 			Node firstChild = element.getFirstChild();
-			System.out.println("Resource id: "+ firstChild.getNodeName());
+//			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-			System.out.println(firstChildAttribute);
+//			System.out.println(firstChildAttribute);
 			Node nameNode = firstChild.getNextSibling();
 			String name = nameNode.getTextContent();
-			System.out.println("Name: "+name);
+//			System.out.println("Name: "+name);
 			
 			tObj = new TripleObject(personSubject, firstChildAttribute, name);
 			repoList.add(tObj);
@@ -295,13 +345,13 @@ public class EntityExtractor {
 		//if so, extract them
 		if((element.getAttribute("rdf:about")).contains("city")){
 			String citySubject = element.getAttribute("rdf:about");
-			System.out.println("City description attribute: "+citySubject);
+//			System.out.println("City description attribute: "+citySubject);
 			Node firstChild = element.getFirstChild();
-			System.out.println("Resource id: "+ firstChild.getNodeName());
+//			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-			System.out.println(firstChildAttribute);
+//			System.out.println(firstChildAttribute);
 			String cityName = firstChild.getNextSibling().getNextSibling().getNextSibling().getNextSibling().getNextSibling().getTextContent();
-			System.out.println("City name: "+cityName);
+//			System.out.println("City name: "+cityName);
 			
 			tObj = new TripleObject(citySubject, firstChildAttribute, cityName);
 			repoList.add(tObj);
@@ -312,24 +362,54 @@ public class EntityExtractor {
 		//if the element contains organization, extract it
 		if((((Element)(element.getFirstChild())).getAttribute("rdf:resource")).contains("Organization")){
 			String orgSubject = element.getAttribute("rdf:about");
-			System.out.println("Organization description attribute: "+orgSubject);
+//			System.out.println("Organization description attribute: "+orgSubject);
 			Node firstChild = element.getFirstChild();
-			System.out.println("Resource id: "+ firstChild.getNodeName());
+//			System.out.println("Resource id: "+ firstChild.getNodeName());
 			String firstChildAttribute = ((Element) firstChild).getAttribute("rdf:resource");
-			System.out.println(firstChildAttribute);
+//			System.out.println(firstChildAttribute);
 			String orgName = firstChild.getNextSibling().getTextContent();
-			System.out.println("Organization name: "+orgName);
+//			System.out.println("Organization name: "+orgName);
 			
 			tObj = new TripleObject(orgSubject, firstChildAttribute, orgName);
 			repoList.add(tObj);
 		}
 	}
 	
-	public static void main(String[] args) {
-		verifyArgs(args);
+	public static void main(String[] args) throws IOException {
+//		verifyArgs(args);
+		
+//		String baseURL ="http://www.thehindu.com/opinion/op-ed/monitoring-the-situation-in-chhattisgarh/article6655763.ece?homepage=true";
+		String baseURL = "http://www.thehindu.com/news/cities/mumbai/starting-to-bring-art-into-lives-of-mumbai-citizens/article6639928.ece";
+		org.jsoup.nodes.Document homeDoc = Jsoup.connect(baseURL).get();
+//		System.out.println("File from URL"+(homeDoc).html());
+		
+		Elements textBody = homeDoc.getElementsByClass("body");
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < textBody.size() - 1; i++){
+			sb.append(textBody.get(i).text());
+		}
+		
+//		System.out.println("URL content body :\n"+sb.toString());
+		File file = new File("article1.txt");
+		
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		bw.write(sb.toString());
+		bw.close();
+		
 		EntityExtractor firstHttpClientPost = new EntityExtractor();
-		firstHttpClientPost.input = new File(args[0]);
-		firstHttpClientPost.output = new File(args[1]);
+//		firstHttpClientPost.input = new File(sb.toString());
+		firstHttpClientPost.input = file;
+		if((firstHttpClientPost.input).isFile())
+			System.out.println("Yes");
+		else
+			System.out.println("No");
+//		System.exit(0);
+
+		firstHttpClientPost.output = new File("nidhi");
 		firstHttpClientPost.client = new HttpClient();
 		firstHttpClientPost.client.getParams().setParameter("http.useragent", "Calais Rest Client");
 
