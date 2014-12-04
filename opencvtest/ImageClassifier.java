@@ -9,6 +9,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -231,12 +233,323 @@ public class ImageClassifier {
 			//System.exit(0);
 			
 		}
-		
 		System.out.println("Size of map "+mapping.size());
 		return mapping;
 		
 		
 	}
+	
+	public static void sortByKMeans(String dir){
+		File imgDir=new File(dir);
+		Mat ref1=Highgui.imread("C:\\dataset1\\outputImage_1.jpg");
+		Mat ref2=Highgui.imread("C:\\dataset1\\outputImage_23.jpg");
+		Mat ref3=Highgui.imread("C:\\dataset1\\outputImage_83.jpg");
+		Mat ref4=Highgui.imread("C:\\dataset1\\outputImage_113.jpg");
+		Mat ref5=Highgui.imread("C:\\dataset1\\outputImage_115.jpg");
+		Mat ref6=Highgui.imread("C:\\dataset1\\outputImage_131.jpg");
+		Mat ref7=Highgui.imread("C:\\dataset1\\outputImage_151.jpg");
+		Mat ref8=Highgui.imread("C:\\dataset1\\outputImage_165.jpg");
+		Mat ref9=Highgui.imread("C:\\dataset1\\outputImage_183.jpg");
+		Mat ref10=Highgui.imread("C:\\dataset1\\outputImage_213.jpg");
+		Mat ref11=Highgui.imread("C:\\dataset1\\outputImage_232.jpg");
+		Mat ref12=Highgui.imread("C:\\dataset1\\outputImage_255.jpg");
+		Mat ref13=Highgui.imread("C:\\dataset1\\outputImage_273.jpg");
+		Mat ref14=Highgui.imread("C:\\dataset1\\outputImage_285.jpg");
+		
+//		Mat ref1=Highgui.imread("C:\\kmeans\\0\\outputImage_67.jpg");
+//		Mat ref2=Highgui.imread("C:\\kmeans\\0\\outputImage_98.jpg");
+//		Mat ref3=Highgui.imread("C:\\kmeans\\0\\outputImage_123.jpg");
+//		Mat ref4=Highgui.imread("C:\\kmeans\\0\\outputImage_151.jpg");
+//		Mat ref5=Highgui.imread("C:\\kmeans\\0\\outputImage_232.jpg");
+//		
+		Mat yuvref1=new Mat();
+		Mat yuvref2=new Mat();
+		Mat yuvref3=new Mat();
+		Mat yuvref4=new Mat();
+		Mat yuvref5=new Mat();
+		Mat yuvref6=new Mat();
+		Mat yuvref7=new Mat();
+		Mat yuvref8=new Mat();
+		Mat yuvref9=new Mat();
+		Mat yuvref10=new Mat();
+		Mat yuvref11=new Mat();
+		Mat yuvref12=new Mat();
+		Mat yuvref13=new Mat();
+		Mat yuvref14=new Mat();
+		
+		
+		Imgproc.cvtColor(ref1, yuvref1, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref2, yuvref2, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref3, yuvref3, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref4, yuvref4, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref5, yuvref5, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref6, yuvref6, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref7, yuvref7, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref8, yuvref8, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref9, yuvref9, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref10, yuvref10, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref11, yuvref11, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref12, yuvref12, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref13, yuvref13, Imgproc.COLOR_RGB2YUV);
+		Imgproc.cvtColor(ref14, yuvref14, Imgproc.COLOR_RGB2YUV);
+		
+		double meanArr[]=new double[15];
+		
+		for (File fileEntry : imgDir.listFiles()) {
+			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+			Mat yuvimg = new Mat();
+			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_RGB2YUV);
+			double tempVal=0;
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref1.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[0]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref2.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[1]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref3.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[2]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref4.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[3]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref5.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[4]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref6.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[5]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref7.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[6]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref8.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[7]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref9.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[8]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref10.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[9]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref11.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[10]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref12.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[11]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref13.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[12]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			for(int i=0;i<288;i++){
+				for(int j=0;j<352;j++){
+					tempVal+=Math.pow((yuvref14.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+				}
+			}
+			meanArr[13]=Math.sqrt(tempVal);
+			tempVal=0.0;
+			
+			
+			
+			int index=findMin(meanArr);
+			
+			File file = new File("C:\\kmeans\\"+index);
+			File src=new File(fileEntry.getAbsolutePath());
+        	if (!file.exists()) {
+        		if (file.mkdir()) {
+        			File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+        			try {
+        				System.out.println("Creating bucketno "+index);
+    					copyFileUsingFileChannels(src, dest);
+    				} catch (IOException e) {
+    					e.printStackTrace();
+    				}
+        		} else {
+        			System.out.println("Failed to create directory!");
+        		}
+        	}
+        	else{
+        		File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+    			try {
+    				System.out.println("Inserting in bucketno "+index);
+					copyFileUsingFileChannels(src, dest);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
+
+		}
+			
+	}
+
+	public static void sortByKMeans1(String dir){
+		File imgDir=new File(dir);
+		Mat ref1=Highgui.imread("C:\\dataset1\\outputImage_1.jpg");
+		Mat ref2=Highgui.imread("C:\\dataset1\\outputImage_23.jpg");
+		Mat ref3=Highgui.imread("C:\\dataset1\\outputImage_123.jpg");
+		Mat ref4=Highgui.imread("C:\\dataset1\\outputImage_199.jpg");
+		Mat ref5=Highgui.imread("C:\\dataset1\\outputImage_248.jpg");
+		
+//		Mat ref1=Highgui.imread("C:\\kmeans\\0\\outputImage_67.jpg");
+//		Mat ref2=Highgui.imread("C:\\kmeans\\0\\outputImage_98.jpg");
+//		Mat ref3=Highgui.imread("C:\\kmeans\\0\\outputImage_123.jpg");
+//		Mat ref4=Highgui.imread("C:\\kmeans\\0\\outputImage_151.jpg");
+//		Mat ref5=Highgui.imread("C:\\kmeans\\0\\outputImage_232.jpg");
+		
+		Mat yuvref1=new Mat();
+		Mat yuvref2=new Mat();
+		Mat yuvref3=new Mat();
+		Mat yuvref4=new Mat();
+		Mat yuvref5=new Mat();
+		
+		
+		Imgproc.cvtColor(ref1, yuvref1, Imgproc.COLOR_RGB2HSV);
+		Imgproc.cvtColor(ref2, yuvref2, Imgproc.COLOR_RGB2HSV);
+		Imgproc.cvtColor(ref3, yuvref3, Imgproc.COLOR_RGB2HSV);
+		Imgproc.cvtColor(ref4, yuvref4, Imgproc.COLOR_RGB2HSV);
+		Imgproc.cvtColor(ref5, yuvref5, Imgproc.COLOR_RGB2HSV);
+		
+		int pk1=getPeakValueForImage(yuvref1);
+		int pk2=getPeakValueForImage(yuvref2);
+		int pk3=getPeakValueForImage(yuvref3);
+		int pk4=getPeakValueForImage(yuvref4);
+		int pk5=getPeakValueForImage(yuvref5);
+		
+		int meanArr[]=new int[5];
+		
+		for (File fileEntry : imgDir.listFiles()) {
+			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+			Mat yuvimg = new Mat();
+			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_RGB2HSV);
+			
+			int pkimg=getPeakValueForImage(yuvimg);
+			
+			meanArr[0]=Math.abs(pk1-pkimg);
+			meanArr[1]=Math.abs(pk2-pkimg);
+			meanArr[2]=Math.abs(pk3-pkimg);
+			meanArr[3]=Math.abs(pk4-pkimg);
+			meanArr[4]=Math.abs(pk5-pkimg);
+			System.out.println(pk1+" "+pk2+" "+pk3+" "+pk4+" "+pk5+" "+pkimg+" ");
+			int index=findMin(meanArr);
+			
+			File file = new File("C:\\kmeans\\"+index);
+			File src=new File(fileEntry.getAbsolutePath());
+        	if (!file.exists()) {
+        		if (file.mkdir()) {
+        			File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+        			try {
+        				System.out.println("Creating bucketno "+index);
+    					copyFileUsingFileChannels(src, dest);
+    				} catch (IOException e) {
+    					e.printStackTrace();
+    				}
+        		} else {
+        			System.out.println("Failed to create directory!");
+        		}
+        	}
+        	else{
+        		File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+    			try {
+    				System.out.println("Inserting in bucketno "+index);
+					copyFileUsingFileChannels(src, dest);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
+
+		}
+			
+	}
+
+	public static int findMin(double array[]){
+		 double min = Double.MAX_VALUE;
+		 int minIndex=0;
+	        for (int i = 0; i < array.length-1; i++) {
+	            if (array[i] < min) {
+	                min = array[i];
+	                minIndex=i;
+	            }
+	        }
+	        return minIndex;
+		
+	}
+	
+	public static int findMin(int array[]){
+		 int min = Integer.MAX_VALUE;
+		 int minIndex=0;
+	        for (int i = 0; i < array.length; i++) {
+	            if (array[i] < min) {
+	                min = array[i];
+	                minIndex=i;
+	            }
+	        }
+	        return minIndex;
+		
+	}
+	
 	public static void printMat(double input[][]){
 		for(int i = 0; i < 50; i++){
 			for(int j = 0; j < 50; j++){
@@ -261,22 +574,86 @@ public class ImageClassifier {
 		}
 	}
 	
+	public static void createBuckets(HashMap<String, Integer> imageMap,int bucketSize){
+		Iterator it = imageMap.entrySet().iterator();
+		new File("c:\\buckets").mkdir();
+		
+		while (it.hasNext()) {
+	        Map.Entry pairs = (Map.Entry)it.next();
+	        //if((int)pairs.getValue()>hueValue && (int)pairs.getValue()<=(hueValue+bucketSize)){
+	        	System.out.println("Image path "+ pairs.getKey()+" "+"peakvalue "+pairs.getValue());
+	        	File src= new File((String)pairs.getKey());
+	        	int bucketNo=(int)pairs.getValue()/bucketSize; 
+	        	//String bucketNo="bucket"+index;
+	        	File file = new File("C:\\buckets\\"+bucketNo);
+	        	if (!file.exists()) {
+	        		if (file.mkdir()) {
+	        			File dest=new File("C:\\buckets\\"+bucketNo+"\\"+src.getName());
+	        			try {
+	        				System.out.println("Creating bucketno "+bucketNo);
+	    					copyFileUsingFileChannels(src, dest);
+	    				} catch (IOException e) {
+	    					e.printStackTrace();
+	    				}
+	        		} else {
+	        			System.out.println("Failed to create directory!");
+	        		}
+	        	}
+	        	else{
+	        		File dest=new File("C:\\buckets\\"+bucketNo+"\\"+src.getName());
+        			try {
+        				System.out.println("Inserting in bucketno "+bucketNo);
+    					copyFileUsingFileChannels(src, dest);
+    				} catch (IOException e) {
+    					e.printStackTrace();
+    				}
+	        	}
+	        	
+		}
+		
+	}
+	
 	
 	public static void main( String[] args ) throws IOException
 	   {
+		
 		 System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-//		 HashMap<String,Integer> peakMap=getImages(args[0]);
-//		 
-//		 int lowerLimit=0;
-//		 int upperLimit=50;
-//		 createBuckets(peakMap,lowerLimit,upperLimit);
+
+		//sortByKMeans(args[0]);
+		 HashMap<String,Integer> peakMap=getImages(args[0]);
 		 
-		 HashMap<String,Double> filterMap = classifyByFilter(args[1]);
-		 separateCartoonImages(filterMap);
- 
-		 FaceDetector detect=new FaceDetector();
-		 List<String> faceImages=detect.faceDetect(args[0]);
-		 separateFaceImages(faceImages);
+		 int lowerLimit=0;
+		 int upperLimit=50;
+		 //createBuckets(peakMap,lowerLimit,upperLimit);
+		 createBuckets(peakMap, 50);
+//		 
+//		 List<Media> listOfMedia = new ArrayList<Media>();
+//		 
+//		 File imgDir=new File(args[1]);
+//		 for (File fileEntry : imgDir.listFiles()) {
+//			 Path p = Paths.get(fileEntry.getAbsolutePath());
+//			 Media m = new Media(p, MediaType.Image);
+//			 listOfMedia.add(m);
+//			 
+//		 }
+//		 
+//		 //System.out.println(listOfMedia.get(0).getFilePath().toString());
+//		 //System.exit(0);
+//		 MainUI ui = MainUI.getInstance();
+//		 ui.createCollageIfNotExists();
+////			
+//		 Collage collage = new Collage(listOfMedia, 100, 60);
+//		 //Path cpath=Paths.get(args[1]+"\\"+collage);
+//		 Media display = new Media(collage.getCollagedImageFileName(), MediaType.Collage);
+//			DisplayMedia image = new DisplayMedia(display);
+//			image.display();
+//		 
+//		 HashMap<String,Double> filterMap = classifyByFilter(args[1]);
+//		 separateCartoonImages(filterMap);
+// 
+//		 FaceDetector detect=new FaceDetector();
+//		 List<String> faceImages=detect.faceDetect(args[0]);
+//		 separateFaceImages(faceImages);
 		 		 
 		 //HashMap<String,Double> dctMap = getDCTValues(args[0]);  
 		 //createBuckets(dctMap,1566.0,1650.0);
