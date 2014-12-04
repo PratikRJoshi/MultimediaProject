@@ -92,7 +92,7 @@ public class Collage {
 
 	private void display(byte[] imageBytes, int width, int height) {
 		BufferedImage image = getImage(imageBytes, width, height);
-		display(image, width, height);
+		//display(image, width, height);
 	}
 
 	private byte[] createThumbNail(Media media, int thumbNailWidth, int thumbNailHeight) throws IOException {
@@ -167,7 +167,7 @@ public class Collage {
 			frameNumber = rand.nextInt(numOfFrames);
 		}
 		BufferedImage orgImage = getImageWithFrameNumber(filePath, frameNumber, width, height);
-		display(orgImage, width, height);
+		//display(orgImage, width, height);
 		return orgImage;
 	}
 
