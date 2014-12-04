@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -50,13 +51,16 @@ public class ImageClassifier {
 		File folder = new File("C:\\Users\\Neeraj\\Desktop\\CS576_Project_Fall_2014\\CS576_Project_Dataset_1");
 		int i=1;
 		for (File fileEntry : folder.listFiles()) {
-	            //System.out.println(i++ +" "+fileEntry.getName());
+	        System.out.println(i++ +" "+fileEntry.getName());
+	        String fileName = fileEntry.getName().split("\\.")[0];
 			imageArr[0]="C:\\Users\\Neeraj\\Desktop\\CS576_Project_Fall_2014\\CS576_Project_Dataset_1\\"+fileEntry.getName();
-			imageArr[1]="outputImage_"+(i++)+".jpg";
+			imageArr[1]=(fileName)+".jpg";
+			System.out.println(imageArr[1]);
+			
 			image.main(imageArr);
 	        
 	    }
-		
+
 	}
 	
 	public static int getPeakValueForImage(Mat hueMat){
@@ -239,209 +243,87 @@ public class ImageClassifier {
 		
 	}
 	
-	public static void sortByKMeans(String dir){
+	public static Map<Integer, List<String>> sortByKMeans(String dir){
 		File imgDir=new File(dir);
-		Mat ref1=Highgui.imread("C:\\dataset1\\outputImage_1.jpg");
-		Mat ref2=Highgui.imread("C:\\dataset1\\outputImage_23.jpg");
-		Mat ref3=Highgui.imread("C:\\dataset1\\outputImage_83.jpg");
-		Mat ref4=Highgui.imread("C:\\dataset1\\outputImage_113.jpg");
-		Mat ref5=Highgui.imread("C:\\dataset1\\outputImage_115.jpg");
-		Mat ref6=Highgui.imread("C:\\dataset1\\outputImage_131.jpg");
-		Mat ref7=Highgui.imread("C:\\dataset1\\outputImage_151.jpg");
-		Mat ref8=Highgui.imread("C:\\dataset1\\outputImage_165.jpg");
-		Mat ref9=Highgui.imread("C:\\dataset1\\outputImage_183.jpg");
-		Mat ref10=Highgui.imread("C:\\dataset1\\outputImage_213.jpg");
-		Mat ref11=Highgui.imread("C:\\dataset1\\outputImage_232.jpg");
-		Mat ref12=Highgui.imread("C:\\dataset1\\outputImage_255.jpg");
-		Mat ref13=Highgui.imread("C:\\dataset1\\outputImage_273.jpg");
-		Mat ref14=Highgui.imread("C:\\dataset1\\outputImage_285.jpg");
+		int numberOfBaseImages = 10;
+		double meanArr[]=new double[numberOfBaseImages];
+
+		int randImages[]=new int[numberOfBaseImages];
+		Random number=new Random();
+		int  randImg=0;
+		Map<Integer,List<String>> collageList=new HashMap<Integer,List<String>>();
 		
-//		Mat ref1=Highgui.imread("C:\\kmeans\\0\\outputImage_67.jpg");
-//		Mat ref2=Highgui.imread("C:\\kmeans\\0\\outputImage_98.jpg");
-//		Mat ref3=Highgui.imread("C:\\kmeans\\0\\outputImage_123.jpg");
-//		Mat ref4=Highgui.imread("C:\\kmeans\\0\\outputImage_151.jpg");
-//		Mat ref5=Highgui.imread("C:\\kmeans\\0\\outputImage_232.jpg");
-//		
-		Mat yuvref1=new Mat();
-		Mat yuvref2=new Mat();
-		Mat yuvref3=new Mat();
-		Mat yuvref4=new Mat();
-		Mat yuvref5=new Mat();
-		Mat yuvref6=new Mat();
-		Mat yuvref7=new Mat();
-		Mat yuvref8=new Mat();
-		Mat yuvref9=new Mat();
-		Mat yuvref10=new Mat();
-		Mat yuvref11=new Mat();
-		Mat yuvref12=new Mat();
-		Mat yuvref13=new Mat();
-		Mat yuvref14=new Mat();
-		
-		
-		Imgproc.cvtColor(ref1, yuvref1, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref2, yuvref2, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref3, yuvref3, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref4, yuvref4, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref5, yuvref5, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref6, yuvref6, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref7, yuvref7, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref8, yuvref8, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref9, yuvref9, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref10, yuvref10, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref11, yuvref11, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref12, yuvref12, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref13, yuvref13, Imgproc.COLOR_RGB2YUV);
-		Imgproc.cvtColor(ref14, yuvref14, Imgproc.COLOR_RGB2YUV);
-		
-		double meanArr[]=new double[15];
-		
+		for(int i=0;i<numberOfBaseImages;i++)
+		{
+			randImg= number.nextInt(300);
+			if(randImg!=0)
+				randImages[i]=randImg;
+		}
+		Map<String,	Integer> imageClusterMap=new HashMap<String,Integer>();
 		for (File fileEntry : imgDir.listFiles()) {
 			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
 			Mat yuvimg = new Mat();
 			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_RGB2YUV);
-			double tempVal=0;
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref1.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
+			
+						
+			for(int i = 0; i < numberOfBaseImages; i++){
+				
+				double tempVal=0;
+				
+				Mat randRef=Highgui.imread("C:\\dataset1\\outputImage_"+randImages[i]+".jpg");
+				
+				Mat yuvRandRef=new Mat();
+				Imgproc.cvtColor(randRef, yuvRandRef, Imgproc.COLOR_RGB2YUV);
+				
+				
+				for(int j = 0; j < 288; j++){
+					for(int k = 0; k < 352; k++){
+						tempVal+=Math.pow((yuvRandRef.get(j, k)[0]-yuvimg.get(j, k)[0]),2);
+					}
 				}
+				meanArr[i]=Math.sqrt(tempVal);
+				
 			}
-			meanArr[0]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref2.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[1]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref3.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[2]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref4.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[3]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref5.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[4]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref6.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[5]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref7.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[6]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref8.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[7]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref9.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[8]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref10.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[9]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref11.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[10]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref12.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[11]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref13.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[12]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			for(int i=0;i<288;i++){
-				for(int j=0;j<352;j++){
-					tempVal+=Math.pow((yuvref14.get(i, j)[0]-yuvimg.get(i, j)[0]),2);
-				}
-			}
-			meanArr[13]=Math.sqrt(tempVal);
-			tempVal=0.0;
-			
-			
-			
 			int index=findMin(meanArr);
+			System.out.println("Inserting into index "+index);
+			//imageClusterMap.put(fileEntry.getAbsolutePath(), index);
+			//List<String> imgList = new ArrayList<String>();
+			if(collageList.get(index)==null){
+				List<String> tempList= new ArrayList<String>();
+				tempList.add(fileEntry.getName());
+				collageList.put(index,tempList);
+			}
+			else{
+				collageList.get(index).add(fileEntry.getName());
+			}
 			
-			File file = new File("C:\\kmeans\\"+index);
-			File src=new File(fileEntry.getAbsolutePath());
-        	if (!file.exists()) {
-        		if (file.mkdir()) {
-        			File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
-        			try {
-        				System.out.println("Creating bucketno "+index);
-    					copyFileUsingFileChannels(src, dest);
-    				} catch (IOException e) {
-    					e.printStackTrace();
-    				}
-        		} else {
-        			System.out.println("Failed to create directory!");
-        		}
-        	}
-        	else{
-        		File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
-    			try {
-    				System.out.println("Inserting in bucketno "+index);
-					copyFileUsingFileChannels(src, dest);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-        	}
+//			File file = new File("C:\\kmeans\\"+index);
+//			File src=new File(fileEntry.getAbsolutePath());
+//        	if (!file.exists()) {
+//        		if (file.mkdir()) {
+//        			File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+//        			try {
+//        				System.out.println("Creating bucketno "+index);
+//    					copyFileUsingFileChannels(src, dest);
+//    				} catch (IOException e) {
+//    					e.printStackTrace();
+//    				}
+//        		} else {
+//        			System.out.println("Failed to create directory!");
+//        		}
+//        	}
+//        	else{
+//        		File dest=new File("C:\\kmeans\\"+index+"\\"+src.getName());
+//    			try {
+//    				System.out.println("Inserting in bucketno "+index);
+//					copyFileUsingFileChannels(src, dest);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//        	}
 
 		}
+		return collageList;
 			
 	}
 
@@ -527,7 +409,7 @@ public class ImageClassifier {
 	public static int findMin(double array[]){
 		 double min = Double.MAX_VALUE;
 		 int minIndex=0;
-	        for (int i = 0; i < array.length-1; i++) {
+	        for (int i = 0; i < array.length; i++) {
 	            if (array[i] < min) {
 	                min = array[i];
 	                minIndex=i;
@@ -618,35 +500,46 @@ public class ImageClassifier {
 	   {
 		
 		 System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-
-		//sortByKMeans(args[0]);
-		 HashMap<String,Integer> peakMap=getImages(args[0]);
-		 
-		 int lowerLimit=0;
-		 int upperLimit=50;
-		 //createBuckets(peakMap,lowerLimit,upperLimit);
-		 createBuckets(peakMap, 50);
+		 //convertRGBtoJPG();
+		 Map<Integer, List<String>> collageMap=sortByKMeans(args[0]);
+//		 HashMap<String,Integer> peakMap=getImages(args[0]);
 //		 
-//		 List<Media> listOfMedia = new ArrayList<Media>();
-//		 
-//		 File imgDir=new File(args[1]);
-//		 for (File fileEntry : imgDir.listFiles()) {
-//			 Path p = Paths.get(fileEntry.getAbsolutePath());
-//			 Media m = new Media(p, MediaType.Image);
-//			 listOfMedia.add(m);
-//			 
-//		 }
+//		 int lowerLimit=0;
+//		 int upperLimit=50;
+//		 //createBuckets(peakMap,lowerLimit,upperLimit);
+//		 createBuckets(peakMap, 30);
+//	 
+		 Iterator it = collageMap.entrySet().iterator();
+		 List<Media> listOfCollage = new ArrayList<Media>();
+		 MainUI ui = MainUI.getInstance();
+		 ui.createCollageIfNotExists();
+	
+		 while (it.hasNext()) {
+		        Map.Entry pairs = (Map.Entry)it.next();
+		    
+			List<Media> listOfMedia = new ArrayList<Media>();
+		 //give the directory to the dataset		 
+			List<String> images = (ArrayList<String>)pairs.getValue();
+			for (int i=0;i<images.size();i++) {
+			 System.out.println(images.get(i));
+			 Path p = Paths.get("C:\\Users\\Neeraj\\Desktop\\CS576_Project_Fall_2014\\CS576_Project_Dataset_1\\"+images.get(i).split("\\.")[0]+".rgb");
+			 Media m = new Media(p, MediaType.Image);
+			 listOfMedia.add(m);
+		 }
 //		 
 //		 //System.out.println(listOfMedia.get(0).getFilePath().toString());
 //		 //System.exit(0);
-//		 MainUI ui = MainUI.getInstance();
-//		 ui.createCollageIfNotExists();
-////			
-//		 Collage collage = new Collage(listOfMedia, 100, 60);
-//		 //Path cpath=Paths.get(args[1]+"\\"+collage);
-//		 Media display = new Media(collage.getCollagedImageFileName(), MediaType.Collage);
-//			DisplayMedia image = new DisplayMedia(display);
-//			image.display();
+		 
+		 Collage collage = new Collage(listOfMedia, 50, 50);
+		 Media coll=new Media(collage.getCollagedImageFileName(), MediaType.Collage);
+		 listOfCollage.add(coll);
+		 //Path cpath=Paths.get(args[1]+"\\"+collage);
+		 }
+		 Collage newCollage = new Collage(listOfCollage, 50, 50);
+		 Media display = new Media(newCollage.getCollagedImageFileName(), MediaType.Collage);
+		 DisplayMedia image = new DisplayMedia(display);
+		 image.display();
+		 
 //		 
 //		 HashMap<String,Double> filterMap = classifyByFilter(args[1]);
 //		 separateCartoonImages(filterMap);
