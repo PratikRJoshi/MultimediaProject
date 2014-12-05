@@ -34,11 +34,6 @@ public class MediaComponent extends JComponent implements MouseListener {
 	
 	public MediaComponent(Media media, DisplayMedia displayComponent) throws IOException {
 		//this.displayComponent = displayComponent;
-		this.media = media;
-		this.collageMetadata = null;
-		if(MediaType.Collage == media.getFileType()) {
-			readFromMetadataFile();
-		}
 		//setLayout(new BorderLayout());
 		int width = MainUI.getWidth(media.getFileType());
 		int height = MainUI.getHeight(media.getFileType());
@@ -61,6 +56,11 @@ public class MediaComponent extends JComponent implements MouseListener {
 	
 	public void displayMedia(Media m) throws IOException {
 		//JFrame frame = displayComponent.getFrame();
+		this.media = m;
+		this.collageMetadata = null;
+		if(MediaType.Collage == m.getFileType()) {
+			readFromMetadataFile();
+		}
 		Path filePath = m.getFilePath();
 		MediaType fileType = m.getFileType();
 		int frameWidth = MainUI.getWidth(fileType);
@@ -117,10 +117,12 @@ public class MediaComponent extends JComponent implements MouseListener {
 	public void mouseClicked(MouseEvent e) {
 		if(MediaType.Collage == media.getFileType()) {
 			Point p = new Point(e.getX(), e.getY());
+			System.out.println(p.toString());
 			for(Rectangle r: collageMetadata.keySet()) {
 				if(r.contains(p)) {
 					Media m = collageMetadata.get(r);
 					try {
+						this.media = m;
 						displayMedia(m);
 					} catch (IOException e1) {
 						e1.printStackTrace();

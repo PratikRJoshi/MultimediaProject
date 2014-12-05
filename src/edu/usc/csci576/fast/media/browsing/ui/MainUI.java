@@ -20,8 +20,16 @@ public class MainUI {
 		return mediaFolderName;
 	}
 
+	public void setMediaFolderName(Path mediaFolderName) {
+		this.mediaFolderName = mediaFolderName;
+	}
+
 	public Path getCollageFolderName() {
 		return collageFolderName.toAbsolutePath();
+	}
+
+	public void setCollageFolderName(Path collageFolderName) {
+		this.collageFolderName = collageFolderName;
 	}
 
 	public static MainUI getInstance() {
@@ -34,7 +42,8 @@ public class MainUI {
 	public static void main(String[] args) {
 		try {
 			MainUI ui = MainUI.getInstance();
-			ui.createCollageIfNotExists();
+			ui.setCollageFolderName(Paths.get(args[0] + "/collage"));
+			ui.createFolderIfNotExists(ui.getCollageFolderName());
 			List<Media> mediaList = new ArrayList<Media>();
 			for (int i = 1; i <= 9; i++) {
 				String fileName = String.format("dataset/image00%d.rgb", i);
@@ -79,10 +88,10 @@ public class MainUI {
 		}
 	}
 	
-	private void createCollageIfNotExists() throws IOException {
-		collageFolderName = Paths.get("dataset/collage");
-		if (!Files.exists(collageFolderName.toAbsolutePath())) {
-			Files.createDirectory(collageFolderName.toAbsolutePath());
+	/* Path of the folder to be created should be absolute Path */ 
+	public void createFolderIfNotExists(Path folderPath) throws IOException {
+		if (!Files.exists(folderPath)) {
+			Files.createDirectory(folderPath);
 		}
 	}
 }
