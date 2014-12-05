@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Stack;
 
 import javax.swing.JComponent;
 
@@ -28,6 +29,7 @@ import javax.swing.JComponent;
 public class MediaComponent extends JComponent implements MouseListener {
 
 	private static final long serialVersionUID = 1L;
+	private Stack<Media> mediaStack;
 	private Media media; 
 	private HashMap<Rectangle, Media> collageMetadata;
 	private BufferedImage image;
@@ -35,6 +37,7 @@ public class MediaComponent extends JComponent implements MouseListener {
 	public MediaComponent(Media media, DisplayMedia displayComponent) throws IOException {
 		//this.displayComponent = displayComponent;
 		//setLayout(new BorderLayout());
+		mediaStack = new Stack<Media>();
 		int width = MainUI.getWidth(media.getFileType());
 		int height = MainUI.getHeight(media.getFileType());
 		Dimension mediaDimension = new Dimension(width, height);
@@ -120,6 +123,7 @@ public class MediaComponent extends JComponent implements MouseListener {
 			System.out.println(p.toString());
 			for(Rectangle r: collageMetadata.keySet()) {
 				if(r.contains(p)) {
+					mediaStack.push(media);
 					Media m = collageMetadata.get(r);
 					try {
 						this.media = m;
@@ -154,6 +158,13 @@ public class MediaComponent extends JComponent implements MouseListener {
 	public void mouseExited(MouseEvent e) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public Media getPreviousMedia() {
+		if(mediaStack != null && !mediaStack.isEmpty()) {
+			return mediaStack.pop();
+		}
+		return null;
 	}
 
 }
