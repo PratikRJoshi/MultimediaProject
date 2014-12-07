@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -39,9 +41,45 @@ public class Collage {
 		return collagedImageMetadataFileName;
 	}
 	
-	public Collage(List<Media> mediaList, int thumbNailWidth,
-			int thumbNailHeight) throws IOException {
-		createCollage(mediaList, thumbNailWidth, thumbNailHeight);
+	public Collage(List<Media> mediaList) throws IOException {
+		Dimension d = getThumbNailDimensions(mediaList.size());
+		createCollage(mediaList, d.width, d.height);
+	}
+
+	private Dimension getThumbNailDimensions(int listSize) {
+		int nearestBiggerSize = getNearestBiggerSize(listSize);
+		int thumbNailSize = COLLAGED_IMAGE_WIDTH * COLLAGED_IMAGE_HEIGHT / nearestBiggerSize;
+		List<Integer> divisors = getDivisors(thumbNailSize);
+		Collections.sort(divisors);
+		int index = divisors.size() / 2;
+		int thumNailWidth = divisors.get(index);
+		int thumNailHeight = divisors.get(index-1);
+		return new Dimension(thumNailWidth, thumNailHeight);
+	}
+	
+	private List<Integer> getDivisors(int thumbNailSize) {
+		List<Integer> divisors = new ArrayList<Integer>();
+		int max = (int)Math.floor(Math.sqrt(thumbNailSize));
+		for (int i = 1; i <= max; i++) {
+			if (thumbNailSize % i == 0) {
+				int divisor = thumbNailSize / i;
+				if(COLLAGED_IMAGE_WIDTH % i == 0 && COLLAGED_IMAGE_WIDTH % divisor == 0) {
+					divisors.add(i);
+					divisors.add(thumbNailSize / i);
+				}
+			}
+		}
+		return divisors;
+	}
+
+	private int getNearestBiggerSize(int listSize) {
+		int[] roundListSizes = {1,4,6,8,9,10,12,15,16,18,20,24,25,30,32,36,40,45,50,60};
+		for(int i=0;i<roundListSizes.length;i++) {
+			if(listSize <= roundListSizes[i]) {
+				return roundListSizes[i];
+			}
+		}
+		return roundListSizes[roundListSizes.length-1];
 	}
 
 	private void createCollage(List<Media> mediaList, int thumbNailWidth,

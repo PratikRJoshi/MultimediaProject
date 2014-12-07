@@ -260,9 +260,9 @@ public class ImageClassifier {
 
 		Map<Integer, List<String>> collageList = new HashMap<Integer, List<String>>();
 
-		List<Integer> randomImageNumbers = getListOfRandomNumbers();
-		List<Mat> yuvBaseRefList = new ArrayList<Mat>();
 		File[] rgbImageFiles = imgDir.listFiles();
+		List<Integer> randomImageNumbers = getListOfRandomNumbers(rgbImageFiles.length);
+		List<Mat> yuvBaseRefList = new ArrayList<Mat>();
 		for (int i=0;i<numberOfBaseImages;i++) {
 			String baseImage = rgbImageFiles[randomImageNumbers.get(i)].getAbsolutePath();
 			Mat baseRef = Highgui.imread(baseImage);
@@ -301,9 +301,9 @@ public class ImageClassifier {
 
 	}
 
-	private static List<Integer> getListOfRandomNumbers() {
+	private static List<Integer> getListOfRandomNumbers(int max) {
 		List<Integer> randomNumbers = new ArrayList<Integer>();
-		for(int i=1;i<=300;i++) {
+		for(int i=0;i<max;i++) {
 			randomNumbers.add(i);
 		}
 		Collections.shuffle(randomNumbers);
@@ -516,11 +516,11 @@ public class ImageClassifier {
 			while(listOfMedia.size() > 60) {
 				listOfMedia.remove(listOfMedia.size() - 1);
 			}
-			Collage collage = new Collage(listOfMedia, 100, 60);
+			Collage collage = new Collage(listOfMedia);
 			Media m = new Media(collage.getCollagedImageFileName(), MediaType.Collage);
 			listOfCollage.add(m);
 		}
-		Collage newCollage = new Collage(listOfCollage, 200, 150);
+		Collage newCollage = new Collage(listOfCollage);
 		Media display = new Media(newCollage.getCollagedImageFileName(), MediaType.Collage);
 		DisplayMedia image = new DisplayMedia(display);
 		image.display();

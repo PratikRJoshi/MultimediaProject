@@ -51,17 +51,17 @@ public class MainUI {
 				Media m = new Media(filePath.toAbsolutePath(), MediaType.Image);
 				mediaList.add(m);
 			}
-			for (int i = 10; i <= 59; i++) {
+			/*for (int i = 10; i <= 59; i++) {
 				String fileName = String.format("dataset/image0%d.rgb", i);
 				Path filePath = Paths.get(fileName);
 				Media m = new Media(filePath.toAbsolutePath(), MediaType.Image);
 				mediaList.add(m);
-			}
+			}*/
 			String fileName = String.format("dataset/video04.rgb");
 			Path filePath = Paths.get(fileName);
 			Media m = new Media(filePath.toAbsolutePath(), MediaType.Video);
 			mediaList.add(m);
-			Collage collage = new Collage(mediaList, 100, 60);
+			Collage collage = new Collage(mediaList);
 			Media display = new Media(collage.getCollagedImageFileName(),
 					MediaType.Collage);
 			DisplayMedia image = new DisplayMedia(display);
