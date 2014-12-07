@@ -11,7 +11,7 @@ import org.opencv.highgui.Highgui;
 import org.opencv.objdetect.CascadeClassifier;
 
 public class FaceDetector {
-	public List<String> faceDetect(String dir) {
+	public List<String> faceDetect(List<String> dir, String baseDir) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		System.out.println("XML Path = " + FaceDetector.class
 						.getResource("haarcascade_frontalface_alt.xml")
@@ -20,16 +20,20 @@ public class FaceDetector {
 						.getResource("haarcascade_frontalface_alt.xml")
 						.getPath().substring(1));
 
-		File imgDir = new File(dir);
+		//File imgDir = new File(dir);
 		List<String> faceImages = new ArrayList<String>();
 
-		for (File fileEntry : imgDir.listFiles()) {
-			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+		//for (File fileEntry : imgDir.listFiles()) {
+			//Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+		for(int i = 0; i < dir.size(); i++){
+			Mat image = Highgui.imread(baseDir+"/"+dir.get(i));
 			MatOfRect faceDetections = new MatOfRect();
 			faceDetector.detectMultiScale(image, faceDetections);
 
-			if (faceDetections.toArray().length > 0)
-				faceImages.add(fileEntry.getAbsolutePath());
+			if (faceDetections.toArray().length > 0){
+				faceImages.add(dir.get(i));
+				dir.remove(dir.get(i));
+			}
 
 		}
 		return faceImages;

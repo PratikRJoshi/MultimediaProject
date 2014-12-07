@@ -11,11 +11,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
@@ -34,6 +37,7 @@ public class ImageClassifier {
 	
 	static double C[] = new double[8];
 	static double COS[][] = new double[8][8];
+	static List<String> imagesList = new ArrayList<String>(); 
 	/*
 	 * private static void convertRGBtoJPG(){
 	 * 
@@ -198,34 +202,53 @@ public class ImageClassifier {
 		}
 
 	}
-
-	private static HashMap<String, Double> classifyByFilter(String dir) {
-		File imgDir = new File(dir);
-		HashMap<String, Double> mapping = new HashMap<String, Double>();
-
+*/
+	public static List<String> getImagesInAList(String dir){
+		File imgDir=new File(dir);
+		List<String> imgList = new ArrayList<String>();
 		for (File fileEntry : imgDir.listFiles()) {
-			Mat src = Highgui.imread(fileEntry.getAbsolutePath());
+			imgList.add(fileEntry.getName());
+		}
+		return imgList;
+	}
+	
+	
+	private static List<String> classifyByFilter(String baseDir) {
+		//File imgDir = new File(dir);
+		HashMap<String, Double> mapping = new HashMap<String, Double>();
+		List<String> cartoonList =new ArrayList<String>();
+		for(int index = 0 ; index < imagesList.size() ; index++){
+			Mat src = Highgui.imread(baseDir+"/"+imagesList.get(index));
 			Mat dst = new Mat();
-			Imgproc.bilateralFilter(src, dst, 5, 250, 250);
+			Imgproc.bilateralFilter(src, dst, 5, 150, 150);
 
 			double meanValue = 0;
-
-			// Imgproc.cvtColor(src, srcHSV, Imgproc.COLOR_RGB2YUV);
-			// Imgproc.cvtColor(dst, dstHSV, Imgproc.COLOR_RGB2YUV);
+			
+			Mat srcHSV=new Mat();
+			Mat dstHSV=new Mat();
+			 
+			Imgproc.cvtColor(src, srcHSV, Imgproc.COLOR_RGB2YUV);
+			Imgproc.cvtColor(dst, dstHSV, Imgproc.COLOR_RGB2YUV);
 
 			for (int i = 0; i < 288; i++)
 				for (int j = 0; j < 352; j++)
-					meanValue += src.get(i, j)[0] - dst.get(i, j)[0];
+					meanValue += srcHSV.get(i, j)[0] - dstHSV.get(i, j)[0];
 
-			meanValue /= 352 * 288;
-			mapping.put(fileEntry.getAbsolutePath(), meanValue);
+			//meanValue /= 352 * 288;
+			
+			if(meanValue < -4000){
+				cartoonList.add(imagesList.get(index));
+				imagesList.remove(imagesList.get(index));
+			}
+			//System.out.println("Mean for the image "+fileEntry.getName()+" is "+meanValue);
+			//mapping.put(fileEntry.getAbsolutePath(), meanValue);
 		}
-		return mapping;
+		return cartoonList;
 		// System.out.println("Mean is "+meanValue);
 
 		// Highgui.imwrite("c:\\testcartoon.jpg", dst);
 	}
-
+/*
 	private static HashMap<String, Double> getDCTValues(String dir) {
 		File imgDir = new File(dir);
 		HashMap<String, Double> mapping = new HashMap<String, Double>();
@@ -253,26 +276,28 @@ public class ImageClassifier {
 	/** 
 	 * Input directory passed should contain the lists of images in jpeg format
 	 **/
-	private static Map<Integer, List<String>> sortByKMeans(String dir) {
-		File imgDir = new File(dir);
+	private static Map<Integer, List<String>> sortByKMeans(List<String> inputList, String baseDir) {
+//		File imgDir = new File(dir);
 		int numberOfBaseImages = 10;
 		double meanArr[] = new double[numberOfBaseImages];
 
 		Map<Integer, List<String>> collageList = new HashMap<Integer, List<String>>();
 
-		File[] rgbImageFiles = imgDir.listFiles();
-		List<Integer> randomImageNumbers = getListOfRandomNumbers(rgbImageFiles.length);
+		//List<Integer> randomImageNumbers = getListOfRandomNumbers();
 		List<Mat> yuvBaseRefList = new ArrayList<Mat>();
+		Random randNumber = new Random();
+//		File[] rgbImageFiles = imgDir.listFiles();
 		for (int i=0;i<numberOfBaseImages;i++) {
-			String baseImage = rgbImageFiles[randomImageNumbers.get(i)].getAbsolutePath();
+			String baseImage = baseDir+"/"+inputList.get(randNumber.nextInt(inputList.size()));
 			Mat baseRef = Highgui.imread(baseImage);
 			Mat yuvBaseRef = new Mat();
 			Imgproc.cvtColor(baseRef, yuvBaseRef, Imgproc.COLOR_RGB2YUV);
 			yuvBaseRefList.add(yuvBaseRef);
 		}
 
-		for (File fileEntry : rgbImageFiles) {
-			Mat image = Highgui.imread(fileEntry.getAbsolutePath());
+//		for (File fileEntry : rgbImageFiles) {
+		for(int x = 0; x < inputList.size(); x++){
+			Mat image = Highgui.imread(baseDir+"/"+inputList.get(x));
 			Mat yuvimg = new Mat();
 			Imgproc.cvtColor(image, yuvimg, Imgproc.COLOR_RGB2YUV);
 
@@ -290,10 +315,10 @@ public class ImageClassifier {
 			System.out.println("Inserting into index " + index);
 			if (collageList.get(index) == null) {
 				List<String> tempList = new ArrayList<String>();
-				tempList.add(fileEntry.getName());
+				tempList.add(inputList.get(x));
 				collageList.put(index, tempList);
 			} else {
-				collageList.get(index).add(fileEntry.getName());
+				collageList.get(index).add(inputList.get(x));
 			}
 
 		}
@@ -301,7 +326,8 @@ public class ImageClassifier {
 
 	}
 
-	private static List<Integer> getListOfRandomNumbers(int max) {
+
+	static List<Integer> getListOfRandomNumbers(int max) {
 		List<Integer> randomNumbers = new ArrayList<Integer>();
 		for(int i=0;i<max;i++) {
 			randomNumbers.add(i);
@@ -311,7 +337,7 @@ public class ImageClassifier {
 	}
 
 	/*private static void sortByKMeans1(String dir) {
-		File imgDir = new File(dir);
+		File imgDir = new File(dir);	
 		Mat ref1 = Highgui.imread("C:\\dataset1\\outputImage_1.jpg");
 		Mat ref2 = Highgui.imread("C:\\dataset1\\outputImage_23.jpg");
 		Mat ref3 = Highgui.imread("C:\\dataset1\\outputImage_123.jpg");
@@ -483,10 +509,49 @@ public class ImageClassifier {
 
 	}*/
 
+	public static Collage getFaceCollage(List<String> faceList ,String baseDir){
+		List<Media> listOfMedia = new ArrayList<Media>();
+		Collage collage = null;
+		for (String imagePath : faceList) {
+			System.out.println(imagePath);
+			Path p = Paths.get(baseDir + "/" + getFileNameWithoutExtension(imagePath) + ".rgb");
+			Media m = new Media(p, MediaType.Image);
+			listOfMedia.add(m);
+		}
+		try {
+			collage = new Collage(listOfMedia);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return collage;
+	}
+	
+	public static Collage getCartoonCollage(List<String> faceList ,String baseDir){
+		List<Media> listOfMedia = new ArrayList<Media>();
+		Collage collage = null;
+		for (String imagePath : faceList) {
+			System.out.println(imagePath);
+			Path p = Paths.get(baseDir + "/" + getFileNameWithoutExtension(imagePath) + ".rgb");
+			System.out.println("p: "+p.toString());
+			Media m = new Media(p, MediaType.Image);
+			listOfMedia.add(m);
+		}
+		try {
+			collage = new Collage(listOfMedia);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return collage;
+	}
 	
 	public static void main(String[] args) throws IOException {
 
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		
+		
+		//System.exit(0);
 
 		/* Make sure the command line argument is absolute path of the folder*/
 		Path mediaFolderPath = Paths.get(args[0]);
@@ -499,33 +564,111 @@ public class ImageClassifier {
 		ui.setCollageFolderName(collageFolderPath);
 		ui.createFolderIfNotExists(jpegFolderPath);
 		createJPEGForEachRGBImage(mediaFolderPath, jpegFolderPath);
+	
+		imagesList = getImagesInAList(jpegFolderPath.toString());
+		
+		FaceDetector fDetect = new FaceDetector();
+		List<String> faceImages = fDetect.faceDetect(imagesList , jpegFolderPath.toString());
+		
+		//clusterByHistogram(args[0]);
+		List<String> cartoonImages = classifyByFilter(jpegFolderPath.toString());
+		
+		List<Media> rootCollage = new ArrayList<Media>();
+		Collage faceCollage=getFaceCollage(faceImages , args[0]);
+		Collage cartoonCollage=getCartoonCollage(cartoonImages,args[0]);
+		
+		Media faceMedia = new Media(faceCollage.getCollagedImageFileName(), MediaType.Collage);
+		Media cartoonMedia = new Media(cartoonCollage.getCollagedImageFileName(), MediaType.Collage);
+		
+		rootCollage.add(faceMedia);
+		rootCollage.add(cartoonMedia);
 
-		Map<Integer, List<String>> collageMap = sortByKMeans(jpegFolderPath.toAbsolutePath().toString());
-		List<Media> listOfCollage = new ArrayList<Media>();
-		for (Integer index : collageMap.keySet()) {
-			List<Media> listOfMedia = new ArrayList<Media>();
-			List<String> images = collageMap.get(index);
-			for (String imagePath : images) {
-				System.out.println(imagePath);
-				Path p = Paths.get(args[0] + "/" + getFileNameWithoutExtension(imagePath) + ".rgb");
-				Media m = new Media(p, MediaType.Image);
-				listOfMedia.add(m);
-			}
-
-			/*TODO should remove this part and divide this into much smaller list sizes*/
-			while(listOfMedia.size() > 60) {
-				listOfMedia.remove(listOfMedia.size() - 1);
-			}
-			Collage collage = new Collage(listOfMedia);
-			Media m = new Media(collage.getCollagedImageFileName(), MediaType.Collage);
-			listOfCollage.add(m);
-		}
-		Collage newCollage = new Collage(listOfCollage);
+		//System.exit(0);
+		
+		Map<Integer, List<String>> collageMap = sortByKMeans(imagesList, jpegFolderPath.toString());
+		Collage kMeansCollage = getKMeansCollage(collageMap, args[0]);
+		Media kMeansMedia = new Media(kMeansCollage.getCollagedImageFileName(), MediaType.Collage);
+		rootCollage.add(kMeansMedia);
+		
+		Collage newCollage = new Collage(rootCollage);
 		Media display = new Media(newCollage.getCollagedImageFileName(), MediaType.Collage);
 		DisplayMedia image = new DisplayMedia(display);
 		image.display();
+		
+//		List<Media> listOfCollage = new ArrayList<Media>();
+//		for (Integer index : collageMap.keySet()) {
+//			List<Media> listOfMedia = new ArrayList<Media>();
+//			List<String> images = collageMap.get(index);
+//			for (String imagePath : images) {
+//				System.out.println(imagePath);
+//				Path p = Paths.get(args[0] + "/" + getFileNameWithoutExtension(imagePath) + ".rgb");
+//				Media m = new Media(p, MediaType.Image);
+//				listOfMedia.add(m);
+//			}
+////
+//			/*TODO should remove this part and divide this into much smaller list sizes*/
+			
+//			Path videoPath = Paths.get("C:\\Pratik\\MultimediaProject\\CS576_Project_Videos_1\\CS576_Project_Videos_1\\video01.rgb");
+//			Media video = new Media(videoPath, MediaType.Video);
+//			listOfMedia.add(video);
+//			Collage collage = new Collage(listOfMedia, 100, 60);
+//			Media m = new Media(collage.getCollagedImageFileName(), MediaType.Collage);
+//			listOfCollage.add(m);
+//		}
+//		Collage newCollage = new Collage(listOfCollage, 200, 150);
+//		Media display = new Media(newCollage.getCollagedImageFileName(), MediaType.Collage);
+//		DisplayMedia image = new DisplayMedia(display);
+//		image.display();
 	}
 
+	public static Collage getKMeansCollage(Map<Integer, List<String>> map, String baseDir){
+		int counter = 1;
+		List<Media> listOfMedia = new ArrayList<Media>();
+		List<Media> kMeansCollageList = new ArrayList<Media>();
+		Collage finalCollage = null ;
+		for (Integer index : map.keySet()) {
+				List<String> images = map.get(index);
+				for (String imagePath : images) {
+					counter++;
+					Path p = Paths.get(baseDir + "/" + getFileNameWithoutExtension(imagePath) + ".rgb");
+					Media m = new Media(p, MediaType.Image);
+					listOfMedia.add(m);
+					if(counter > 60){
+						Collage newCollage;
+						try {
+							newCollage=new Collage(listOfMedia);
+							Media col = new Media(newCollage.getCollagedImageFileName(), MediaType.Collage);
+							kMeansCollageList.add(col);
+							listOfMedia = new ArrayList<Media>();
+							counter=0;
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}	
+				}
+				Collage tempCollage= null;
+				try{
+					tempCollage=new Collage(listOfMedia);
+					Media col = new Media(tempCollage.getCollagedImageFileName(), MediaType.Collage);
+					kMeansCollageList.add(col);
+					listOfMedia = new ArrayList<Media>();
+					}
+				catch (IOException e){
+					e.printStackTrace();
+				}
+			
+		}
+		
+		//create a final collage consisting of all the collages in the collage list object
+		try {
+			finalCollage = new Collage(kMeansCollageList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	return finalCollage;
+		
+	}
+	
 	private static void createJPEGForEachRGBImage(Path mediaFolderPath, Path jpegFolderPath) {
 		try {
 			for (File fileEntry : mediaFolderPath.toFile().listFiles()) {
@@ -550,6 +693,40 @@ public class ImageClassifier {
 			return MediaType.Collage;
 		} else {
 			return MediaType.Video;
+		}
+	}
+		
+	public static void clusterByHistogram(String dir){
+		Mat refImage = Highgui.imread("C:\\Pratik\\MultimediaProject\\CS576_Project_Fall_2014\\CS576_Project_Dataset_1\\jpeg\\image002.jpg");
+		Mat refHSVimg=new Mat();
+		Imgproc.cvtColor(refImage, refHSVimg, Imgproc.COLOR_BGR2HSV);
+		MatOfInt histSize = new MatOfInt(50,60);
+		MatOfFloat ranges= new MatOfFloat(0f,180f,0f,256f);
+		MatOfInt channels = new MatOfInt(0,1);
+		List<Mat> list1 = new ArrayList<Mat>();
+		list1.add(refHSVimg);
+		
+		Mat hist_test1 = new Mat();
+		Imgproc.calcHist(list1, channels, new Mat(), hist_test1, histSize,ranges);
+		
+		
+		File imgDir= new File(dir);
+		for (File fileEntry : imgDir.listFiles()) {
+			Mat img= Highgui.imread(fileEntry.getAbsolutePath());
+			Mat HSVimg= new Mat();
+			Imgproc.cvtColor(img, HSVimg, Imgproc.COLOR_BGR2HSV);
+			List<Mat> list2 = new ArrayList<>();
+			list2.add(HSVimg);
+			
+			Mat hist_test2 = new Mat();
+			Imgproc.calcHist(list2, channels, new Mat(), hist_test2, histSize,ranges);
+			
+			Core.normalize(hist_test1, hist_test1, 0, 1, 32,-1);
+			Core.normalize(hist_test2, hist_test2, 0, 1, 32,-1);
+			
+			double result=Imgproc.compareHist(hist_test1, hist_test2, 1);
+			
+			System.out.println("The result for image "+fileEntry.getName()+" is "+result);
 		}
 	}
 
