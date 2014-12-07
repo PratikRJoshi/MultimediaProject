@@ -17,6 +17,7 @@ import javax.swing.JLabel;
 import edu.usc.csci576.fast.media.browsing.ui.Collage;
 import edu.usc.csci576.fast.media.browsing.ui.MainUI;
 import edu.usc.csci576.fast.media.browsing.ui.Media;
+import edu.usc.csci576.fast.media.browsing.ui.MediaComponent;
 import edu.usc.csci576.fast.media.browsing.ui.MediaType;
 
 public class VideoHandling {
@@ -29,6 +30,9 @@ public class VideoHandling {
 		List<Integer> randomImageNumbers = ImageClassifier.getListOfRandomNumbers();
 		List<BufferedImage> tempList;
 		for (File fileEntry : mediaFolderPath.toFile().listFiles()) {
+			
+			
+			
 			tempList = new ArrayList<BufferedImage>();
 			Path videoPath = Paths.get(fileEntry.getAbsolutePath());
 			System.out.println("Path: "+videoPath.getFileName());
@@ -36,15 +40,19 @@ public class VideoHandling {
 			MediaType fileType = video.getFileType();
 			int frameWidth = MainUI.getWidth(fileType);
 			int frameHeight = MainUI.getHeight(fileType);
+			int numberOfFramesInVideo = MediaComponent.getNumberOfFrames(videoPath,fileType);
+			System.out.println("Number of frames in this video = "+numberOfFramesInVideo);
+			
 			System.out.println(fileEntry.getName()+"frame width = "+frameWidth);
 			System.out.println(fileEntry.getName()+"frame height = "+frameHeight);
 			
-			for(int i = 0; i < 300; i++){
-				System.out.println("Random number = "+randomImageNumbers.get(i));
+			for(int i = 1; i < numberOfFramesInVideo; i+=30){
+				System.out.println("Frame number = "+i);
 				tempList.add(Collage.getImageWithFrameNumber(videoPath, randomImageNumbers.get(i), frameWidth, frameHeight) );
 			}
 			listOfVideoFrames.add(tempList);
-			
+			System.out.println("Video finished");
+			Thread.sleep((1000/framesPerSecond)+ 332);
 		}
 		
 		JFrame frame = new JFrame();
@@ -60,7 +68,7 @@ public class VideoHandling {
 				frame.getContentPane().add(label, BorderLayout.CENTER);
 				frame.pack();
 				frame.setVisible(true);
-				Thread.sleep((1000/framesPerSecond)- 10);
+				Thread.sleep((1000/framesPerSecond)+ 332);
 				frame.remove(label);
 			}
 		}
@@ -78,7 +86,7 @@ public class VideoHandling {
 		
 		
 		
-		
+
 		
 	}
 	
