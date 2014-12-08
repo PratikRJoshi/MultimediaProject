@@ -60,6 +60,11 @@ public class Collage {
 				subMediaList.clear();
 			}
 		}
+		if(!subMediaList.isEmpty()) {
+			Collage subCollage = new Collage(subMediaList);
+			rootMediaList.add(new Media(subCollage.getCollagedImageFileName(), MediaType.Collage));
+			subMediaList.clear();
+		}
 		return rootMediaList;
 	}
 
