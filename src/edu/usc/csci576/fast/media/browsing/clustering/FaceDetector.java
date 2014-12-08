@@ -1,8 +1,6 @@
 package edu.usc.csci576.fast.media.browsing.clustering;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Path;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -11,32 +9,22 @@ import org.opencv.highgui.Highgui;
 import org.opencv.objdetect.CascadeClassifier;
 
 public class FaceDetector {
-	public List<String> faceDetect(List<String> dir, String baseDir) {
+	public boolean hasFace(Path jpegImagePath) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		System.out.println("XML Path = " + FaceDetector.class
+		/*System.out.println("XML Path = " + FaceDetector.class
 						.getResource("haarcascade_frontalface_alt.xml")
-						.getPath().substring(1));
+						.getPath().substring(1));*/
 		CascadeClassifier faceDetector = new CascadeClassifier(FaceDetector.class
 						.getResource("haarcascade_frontalface_alt.xml")
 						.getPath().substring(1));
 
-		//File imgDir = new File(dir);
-		List<String> faceImages = new ArrayList<String>();
+		Mat image = Highgui.imread(jpegImagePath.toString());
+		MatOfRect faceDetections = new MatOfRect();
+		faceDetector.detectMultiScale(image, faceDetections);
 
-		//for (File fileEntry : imgDir.listFiles()) {
-			//Mat image = Highgui.imread(fileEntry.getAbsolutePath());
-		for(int i = 0; i < dir.size(); i++){
-			Mat image = Highgui.imread(baseDir+"/"+dir.get(i));
-			MatOfRect faceDetections = new MatOfRect();
-			faceDetector.detectMultiScale(image, faceDetections);
-
-			if (faceDetections.toArray().length > 0){
-				faceImages.add(dir.get(i));
-				dir.remove(dir.get(i));
-			}
-
+		if (faceDetections.toArray().length > 0) {
+			return true;
 		}
-		return faceImages;
-
+		return false;
 	}
 }

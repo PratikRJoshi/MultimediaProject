@@ -68,7 +68,7 @@ public class MediaComponent extends JComponent implements MouseListener {
 		MediaType fileType = m.getFileType();
 		int frameWidth = MainUI.getWidth(fileType);
 		int frameHeight = MainUI.getHeight(fileType);
-		int numOfFrames = getNumberOfFrames(filePath, fileType);
+		int numOfFrames = MainUI.getNumberOfFrames(filePath, fileType);
 		for(int i=0;i<numOfFrames;i++) {
 			image = Collage.getImageWithFrameNumber(filePath, i, frameWidth, frameHeight);
 			paintImmediately(0, 0, this.getWidth(), this.getHeight());			
@@ -106,15 +106,6 @@ public class MediaComponent extends JComponent implements MouseListener {
 		}
 	}
 
-	private int getNumberOfFrames(Path filePath, MediaType fileType) {
-		int height = MainUI.getHeight(fileType);
-		int width = MainUI.getWidth(fileType);
-		int fileSize = (int) filePath.toFile().length();
-		
-		int sizeOfFrame = height * width * 3;
-		int numOfFrames = fileSize / sizeOfFrame;
-		return numOfFrames;
-	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {

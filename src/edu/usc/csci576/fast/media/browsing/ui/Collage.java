@@ -22,13 +22,13 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import edu.usc.csci576.fast.media.browsing.clustering.Constants;
+
 /**
  * @author Sathish Srinivasan
  */
 public class Collage {
 
-	public static final int COLLAGED_IMAGE_WIDTH = 600;
-	public static final int COLLAGED_IMAGE_HEIGHT = 600;
 	private static int uniqueId = 1;
 	private Path collagedImageFileName;
 	private Path collagedImageMetadataFileName;
@@ -42,13 +42,30 @@ public class Collage {
 	}
 	
 	public Collage(List<Media> mediaList) throws IOException {
+		if(mediaList.size() > Constants.COLLAGE_THRESHOLD) {
+			mediaList = createSubCollage(mediaList);
+		}
 		Dimension d = getThumbNailDimensions(mediaList.size());
 		createCollage(mediaList, d.width, d.height);
 	}
 
+	private List<Media> createSubCollage(List<Media> mediaList) throws IOException {
+		List<Media> rootMediaList = new ArrayList<Media>();
+		List<Media> subMediaList = new ArrayList<Media>();
+		for(Media m: mediaList) {
+			subMediaList.add(m);
+			if(subMediaList.size() >= Constants.COLLAGE_THRESHOLD){
+				Collage subCollage = new Collage(subMediaList);
+				rootMediaList.add(new Media(subCollage.getCollagedImageFileName(), MediaType.Collage));
+				subMediaList.clear();
+			}
+		}
+		return rootMediaList;
+	}
+
 	private Dimension getThumbNailDimensions(int listSize) {
 		int nearestBiggerSize = getNearestBiggerSize(listSize);
-		int thumbNailSize = COLLAGED_IMAGE_WIDTH * COLLAGED_IMAGE_HEIGHT / nearestBiggerSize;
+		int thumbNailSize = Constants.COLLAGED_IMAGE_WIDTH * Constants.COLLAGED_IMAGE_HEIGHT / nearestBiggerSize;
 		List<Integer> divisors = getDivisors(thumbNailSize);
 		Collections.sort(divisors);
 		int index = divisors.size() / 2;
@@ -63,7 +80,7 @@ public class Collage {
 		for (int i = 1; i <= max; i++) {
 			if (thumbNailSize % i == 0) {
 				int divisor = thumbNailSize / i;
-				if(COLLAGED_IMAGE_WIDTH % i == 0 && COLLAGED_IMAGE_WIDTH % divisor == 0) {
+				if(Constants.COLLAGED_IMAGE_WIDTH % i == 0 && Constants.COLLAGED_IMAGE_WIDTH % divisor == 0) {
 					divisors.add(i);
 					divisors.add(thumbNailSize / i);
 				}
@@ -84,8 +101,8 @@ public class Collage {
 
 	private void createCollage(List<Media> mediaList, int thumbNailWidth,
 			int thumbNailHeight) throws IOException {
-		byte[] collagedImageContents = new byte[COLLAGED_IMAGE_WIDTH
-		                        				* COLLAGED_IMAGE_HEIGHT * 3];
+		byte[] collagedImageContents = new byte[Constants.COLLAGED_IMAGE_WIDTH
+		                        				* Constants.COLLAGED_IMAGE_HEIGHT * 3];
 		collagedImageFileName = createCollageFile();
 		collagedImageMetadataFileName = createCollageMetadataFile(collagedImageFileName);
 		OutputStream metadataFileStream = new FileOutputStream(collagedImageMetadataFileName.toFile());
@@ -95,7 +112,7 @@ public class Collage {
 		for (Media media : mediaList) {
 			byte[] thumbNailBytes = createThumbNail(media, thumbNailWidth, thumbNailHeight);
 			display(thumbNailBytes, thumbNailWidth, thumbNailHeight);
-			int numOfThumNailPerRow = COLLAGED_IMAGE_WIDTH / thumbNailWidth;
+			int numOfThumNailPerRow = Constants.COLLAGED_IMAGE_WIDTH / thumbNailWidth;
 			int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
 			int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
 			copyToCollage(collagedImageContents, startY, startX, thumbNailBytes, thumbNailWidth, thumbNailHeight);
@@ -112,9 +129,9 @@ public class Collage {
 	private void copyToCollage(byte[] collagedImageContents,int startY, int startX,
 			byte[] thumbNailContents, int thumbNailWidth, int thumbNailHeight) {
 		int orgLength = thumbNailHeight * thumbNailWidth;
-		int mappedLength = COLLAGED_IMAGE_HEIGHT * COLLAGED_IMAGE_WIDTH;
+		int mappedLength = Constants.COLLAGED_IMAGE_HEIGHT * Constants.COLLAGED_IMAGE_WIDTH;
 		for(int y=0;y<(thumbNailHeight-2);y++) {
-			int mappedY = (startY + y)*COLLAGED_IMAGE_WIDTH;
+			int mappedY = (startY + y)*Constants.COLLAGED_IMAGE_WIDTH;
 			int orgIndex = y * thumbNailWidth;
 			int mappedIndex = mappedY+startX;
 			for(int x=0;x<(thumbNailWidth-2);x++){
@@ -152,7 +169,7 @@ public class Collage {
 		return thumbNailBytes;
 	}
 
-	private BufferedImage toBufferedImage(Image thumbNailImage) {
+	public static BufferedImage toBufferedImage(Image thumbNailImage) {
 		if (thumbNailImage instanceof BufferedImage) {
 			return (BufferedImage) thumbNailImage;
 		}
@@ -184,7 +201,7 @@ public class Collage {
 				offset++;
 			}
 		}
-		int numOfThumNailPerRow = COLLAGED_IMAGE_WIDTH / thumbNailWidth;
+		int numOfThumNailPerRow = Constants.COLLAGED_IMAGE_WIDTH / thumbNailWidth;
 		int startY = ((count-1) / numOfThumNailPerRow) * thumbNailHeight;
 		int startX = ((count-1) % numOfThumNailPerRow) * thumbNailWidth;
 		String contents = String.format("%s %d %d %d %d\n", filePath.toString(), startX, startY, thumbNailWidth, thumbNailHeight);
