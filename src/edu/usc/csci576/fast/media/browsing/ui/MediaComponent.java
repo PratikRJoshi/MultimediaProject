@@ -106,7 +106,7 @@ public class MediaComponent extends JComponent implements MouseListener {
 		}
 	}
 
-	private int getNumberOfFrames(Path filePath, MediaType fileType) {
+	public static int getNumberOfFrames(Path filePath, MediaType fileType) {
 		int height = MainUI.getHeight(fileType);
 		int width = MainUI.getWidth(fileType);
 		int fileSize = (int) filePath.toFile().length();

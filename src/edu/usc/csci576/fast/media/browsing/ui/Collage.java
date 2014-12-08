@@ -113,11 +113,11 @@ public class Collage {
 			byte[] thumbNailContents, int thumbNailWidth, int thumbNailHeight) {
 		int orgLength = thumbNailHeight * thumbNailWidth;
 		int mappedLength = COLLAGED_IMAGE_HEIGHT * COLLAGED_IMAGE_WIDTH;
-		for(int y=0;y<(thumbNailHeight-2);y++) {
+		for(int y=0;y<thumbNailHeight;y++) {
 			int mappedY = (startY + y)*COLLAGED_IMAGE_WIDTH;
 			int orgIndex = y * thumbNailWidth;
 			int mappedIndex = mappedY+startX;
-			for(int x=0;x<(thumbNailWidth-2);x++){
+			for(int x=0;x<thumbNailWidth;x++){
 				collagedImageContents[mappedIndex] = thumbNailContents[orgIndex];
 				collagedImageContents[mappedIndex+mappedLength] = thumbNailContents[orgIndex + orgLength];
 				collagedImageContents[mappedIndex+(mappedLength * 2)] = thumbNailContents[orgIndex + (orgLength*2)];

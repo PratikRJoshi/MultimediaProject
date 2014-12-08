@@ -215,7 +215,7 @@ public class ImageClassifier {
 	
 	private static List<String> classifyByFilter(String baseDir) {
 		//File imgDir = new File(dir);
-		HashMap<String, Double> mapping = new HashMap<String, Double>();
+//		HashMap<String, Double> mapping = new HashMap<String, Double>();
 		List<String> cartoonList =new ArrayList<String>();
 		for(int index = 0 ; index < imagesList.size() ; index++){
 			Mat src = Highgui.imread(baseDir+"/"+imagesList.get(index));
@@ -281,7 +281,7 @@ public class ImageClassifier {
 		int numberOfBaseImages = 10;
 		double meanArr[] = new double[numberOfBaseImages];
 
-		Map<Integer, List<String>> collageList = new HashMap<Integer, List<String>>();
+		Map<Integer, List<String>> collageMap = new HashMap<Integer, List<String>>();
 
 		//List<Integer> randomImageNumbers = getListOfRandomNumbers();
 		List<Mat> yuvBaseRefList = new ArrayList<Mat>();
@@ -313,16 +313,16 @@ public class ImageClassifier {
 			}
 			int index = findMin(meanArr);
 			System.out.println("Inserting into index " + index);
-			if (collageList.get(index) == null) {
+			if (collageMap.get(index) == null) {
 				List<String> tempList = new ArrayList<String>();
 				tempList.add(inputList.get(x));
-				collageList.put(index, tempList);
+				collageMap.put(index, tempList);
 			} else {
-				collageList.get(index).add(inputList.get(x));
+				collageMap.get(index).add(inputList.get(x));
 			}
 
 		}
-		return collageList;
+		return collageMap;
 
 	}
 
@@ -546,6 +546,26 @@ public class ImageClassifier {
 		return collage;
 	}
 	
+	public static Map<Integer, List<String>> checkForVideoFrames(Map<Integer, List<String>> collageMap){
+		int[] array = new int[3];
+		for (Integer index : collageMap.keySet()) {
+			List<String> images = collageMap.get(index);
+			for (String imagePath : images) {
+				if(imagePath.contains("video")){
+					String result = getFileNameWithoutExtension(imagePath);
+					System.out.println(result);
+					//split result at _; then use index to get the last 2 characters which are integer
+					//then increment that int position in the array
+					
+					//then check the array, if > 5, then iterate thru the map and get the corresponding list
+					//then remove that entry from the list and add the video name to the map.
+					//the exact path for videos would be handled in the kMeansCollage
+				}
+			}
+		}
+		return collageMap;
+	}
+	
 	public static void main(String[] args) throws IOException {
 
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -564,8 +584,19 @@ public class ImageClassifier {
 		ui.setCollageFolderName(collageFolderPath);
 		ui.createFolderIfNotExists(jpegFolderPath);
 		createJPEGForEachRGBImage(mediaFolderPath, jpegFolderPath);
-	
+		
+		List<String> listOfVideoImages = null;
+		try {
+			listOfVideoImages = VideoHandling.getImagesFromVideos(args[0], jpegFolderPath);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		imagesList = getImagesInAList(jpegFolderPath.toString());
+		
+		//put the video frames in the imageListS
+//		for(int i = 0; i < listOfVideoImages.size(); i++){
+//			imagesList.add(listOfVideoImages.get(i));
+//		}
 		
 		FaceDetector fDetect = new FaceDetector();
 		List<String> faceImages = fDetect.faceDetect(imagesList , jpegFolderPath.toString());
@@ -583,9 +614,12 @@ public class ImageClassifier {
 		rootCollage.add(faceMedia);
 		rootCollage.add(cartoonMedia);
 
-		//System.exit(0);
-		
 		Map<Integer, List<String>> collageMap = sortByKMeans(imagesList, jpegFolderPath.toString());
+		
+		//check for video frames in the map
+		collageMap = checkForVideoFrames(collageMap);
+		System.exit(0);
+		
 		Collage kMeansCollage = getKMeansCollage(collageMap, args[0]);
 		Media kMeansMedia = new Media(kMeansCollage.getCollagedImageFileName(), MediaType.Collage);
 		rootCollage.add(kMeansMedia);
@@ -686,7 +720,7 @@ public class ImageClassifier {
 		}
 	}
 
-	private static MediaType getFileType(File fileEntry) {
+	static MediaType getFileType(File fileEntry) {
 		if(fileEntry.length() == IMAGE_LENGTH) {
 			return MediaType.Image;
 		} else if(fileEntry.length() == COLLAGE_LENGTH) {
@@ -730,7 +764,7 @@ public class ImageClassifier {
 		}
 	}
 
-	private static String getFileNameWithoutExtension(String imagePath) {
+	static String getFileNameWithoutExtension(String imagePath) {
 		String[] tokens = imagePath.split("\\.");
 		StringBuilder builder = new StringBuilder();
 		for(int i=0;i<tokens.length-1;i++) {
